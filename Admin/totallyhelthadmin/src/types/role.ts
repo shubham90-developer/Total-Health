@@ -1,0 +1,51 @@
+export interface MenuAccess {
+  [key: string]: {
+    checked: boolean
+    children?: { [key: string]: boolean }
+  }
+}
+
+// Backend API Role structure
+// Note: Backend returns "super admin" (two words), not "superadmin"
+export interface Role {
+  _id: string
+  name: string
+  email: string
+  phone: string
+  role: 'super admin' | 'admin' | 'manager' | 'supervisor' | 'cashier' | 'waiter' | 'staff'
+  menuAccess: MenuAccess
+  status: 'active' | 'inactive'
+  createdAt: string
+  updatedAt: string
+}
+
+// Legacy Role interface for backward compatibility
+export interface LegacyRole {
+  _id?: string
+  name: string
+  description?: string
+  menuAccess: MenuAccess
+  isActive: boolean
+  createdAt?: Date
+  updatedAt?: Date
+}
+
+export interface UserRole {
+  _id?: string
+  userId: string
+  roleId: string
+  menuAccess: MenuAccess
+  assignedBy: string
+  assignedAt: Date
+  isActive: boolean
+}
+
+// Updated RoleFormData to match backend API
+export interface RoleFormData {
+  staffName: string
+  email: string
+  password?: string // Optional for edit mode
+  phone: string
+  role: 'superadmin' | 'admin' | 'manager' | 'supervisor' | 'cashier' | 'waiter' | 'staff'
+  menuAccess: MenuAccess
+}

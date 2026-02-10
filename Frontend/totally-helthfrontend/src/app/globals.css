@@ -1,0 +1,129 @@
+@import url("https://fonts.googleapis.com/css2?family=Alumni+Sans+SC:ital,wght@0,100..900;1,100..900&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Dosis:wght@200..800&family=Geist:wght@100..900&family=Jura:wght@300..700&family=Sen:wght@400..800&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap");
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --greenColor: #61844c;
+  --titleColor: #191f30;
+  --whiteColor: #ffffff;
+  --transition: 0.5s;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-barlow), sans-serif;
+}
+
+input[type="radio"]:checked {
+  @apply border-green-600 bg-green-100;
+}
+
+input[type="radio"] {
+  @apply appearance-none rounded-full w-4 h-4 border-2 border-gray-400 transition-colors duration-200;
+}
+
+input {
+  @apply bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block  p-2.5;
+}
+/* ============================theme btn start======================================== */
+.default-btn {
+  color: var(--whiteColor);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+  text-transform: capitalize;
+  background-color: var(--greenColor);
+  border: none;
+  outline: none;
+  font-size: 12px;
+}
+.default-btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  transform: scale(0);
+  background-color: var(--titleColor);
+  left: 0;
+  right: 0;
+  opacity: 0;
+  z-index: -1;
+  transition: var(--transition);
+}
+.default-btn:hover {
+  color: var(--whiteColor);
+}
+.default-btn:hover::before {
+  transform: scale(1);
+  opacity: 1;
+}
+/* ============================theme btn end======================================== */
+
+/* ============================hero bbanner start======================================== */
+/* Add this in global CSS or tailwind layer */
+.custom-swiper-pagination .swiper-pagination-bullet {
+  background-color: #22c55e;
+  opacity: 0.5;
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  transition: all 0.3s ease;
+}
+.custom-swiper-pagination .swiper-pagination-bullet-active {
+  opacity: 1;
+  transform: scale(1.2);
+}
+/* Base pagination bullet */
+.swiper-pagination-bullet {
+  width: 10px !important;
+  height: 10px !important;
+  background-color: #d1d5db !important; /* Tailwind gray-300 */
+  opacity: 1 !important;
+  transition: background-color 0.3s ease !important;
+}
+
+/* Active bullet */
+.swiper-pagination-bullet-active {
+  background-color: var(--greenColor) !important;
+  transform: scale(1.2) !important;
+}
+/* ============================hero bbanner end======================================== */
+/* ============================video bbanner start======================================== */
+@keyframes wave {
+  0% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+  70% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.animate-wave {
+  animation: wave 1.5s infinite ease-out;
+}
+
+/* ============================viedo bbanner end======================================== */
