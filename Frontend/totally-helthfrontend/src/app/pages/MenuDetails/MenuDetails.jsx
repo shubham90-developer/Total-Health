@@ -5,7 +5,7 @@ import Image from "next/image";
 import React, { useState } from "react";
 
 const MenuDetails = () => {
-  const [quantity, setQuantity] = useState(1); // Step 1
+  const [quantity, setQuantity] = useState(1); 
 
   const increaseQty = () => setQuantity((prev) => prev + 1);
   const decreaseQty = () => setQuantity((prev) => (prev > 1 ? prev - 1 : 1)); // Step 3

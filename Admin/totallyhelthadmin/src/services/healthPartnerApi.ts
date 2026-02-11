@@ -1,4 +1,3 @@
-// healthApi.ts
 import { baseApi } from '@/services/baseApi'
 
 export type BenefitItem = {
@@ -92,13 +91,13 @@ export type UpdateBenefitRequest = FormData
 // ==================== API ENDPOINTS ====================
 export const healthApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    // ==================== GET HEALTH ====================
+    // ==================== GET HEALTH (Main endpoint) ====================
     getHealth: builder.query<HealthResponse, void>({
       query: () => ({
         url: '/health-partner',
         method: 'GET',
       }),
-      transformResponse: (response: HealthResponse) => response,
+      providesTags: ['Health', 'CompanyBenefits', 'EmployeeBenefits'],
     }),
 
     // ==================== PARTNER IN HEALTH BENEFITS SECTION ====================
@@ -108,7 +107,7 @@ export const healthApi = baseApi.injectEndpoints({
         method: 'PUT',
         body: formData,
       }),
-      transformResponse: (response: PartnerBenefitsResponse) => response,
+      invalidatesTags: ['Health'],
     }),
 
     // ==================== WHY PARTNER SECTION ====================
@@ -118,7 +117,7 @@ export const healthApi = baseApi.injectEndpoints({
         method: 'PUT',
         body: data,
       }),
-      transformResponse: (response: WhyPartnerResponse) => response,
+      invalidatesTags: ['Health'],
     }),
 
     // ==================== COMPANY BENEFITS ====================
@@ -128,7 +127,7 @@ export const healthApi = baseApi.injectEndpoints({
         method: 'POST',
         body: formData,
       }),
-      transformResponse: (response: BenefitItemResponse) => response,
+      invalidatesTags: ['Health', 'CompanyBenefits'],
     }),
 
     getAllCompanyBenefits: builder.query<BenefitSectionResponse, void>({
@@ -136,7 +135,7 @@ export const healthApi = baseApi.injectEndpoints({
         url: '/health-partner/company-benefits',
         method: 'GET',
       }),
-      transformResponse: (response: BenefitSectionResponse) => response,
+      providesTags: ['CompanyBenefits'],
     }),
 
     updateCompanyBenefit: builder.mutation<BenefitItemResponse, { benefitId: string; formData: UpdateBenefitRequest }>({
@@ -145,7 +144,7 @@ export const healthApi = baseApi.injectEndpoints({
         method: 'PUT',
         body: formData,
       }),
-      transformResponse: (response: BenefitItemResponse) => response,
+      invalidatesTags: ['Health', 'CompanyBenefits'],
     }),
 
     deleteCompanyBenefit: builder.mutation<DeleteResponse, string>({
@@ -153,7 +152,7 @@ export const healthApi = baseApi.injectEndpoints({
         url: `/health-partner/company-benefits/${benefitId}`,
         method: 'DELETE',
       }),
-      transformResponse: (response: DeleteResponse) => response,
+      invalidatesTags: ['Health', 'CompanyBenefits'],
     }),
 
     // ==================== EMPLOYEE BENEFITS ====================
@@ -163,7 +162,7 @@ export const healthApi = baseApi.injectEndpoints({
         method: 'POST',
         body: formData,
       }),
-      transformResponse: (response: BenefitItemResponse) => response,
+      invalidatesTags: ['Health', 'EmployeeBenefits'],
     }),
 
     getAllEmployeeBenefits: builder.query<BenefitSectionResponse, void>({
@@ -171,7 +170,7 @@ export const healthApi = baseApi.injectEndpoints({
         url: '/health-partner/employee-benefits',
         method: 'GET',
       }),
-      transformResponse: (response: BenefitSectionResponse) => response,
+      providesTags: ['EmployeeBenefits'],
     }),
 
     getEmployeeBenefitById: builder.query<BenefitItemResponse, string>({
@@ -179,7 +178,7 @@ export const healthApi = baseApi.injectEndpoints({
         url: `/health-partner/employee-benefits/${benefitId}`,
         method: 'GET',
       }),
-      transformResponse: (response: BenefitItemResponse) => response,
+      providesTags: (result, error, benefitId) => [{ type: 'EmployeeBenefits', id: benefitId }],
     }),
 
     updateEmployeeBenefit: builder.mutation<BenefitItemResponse, { benefitId: string; formData: UpdateBenefitRequest }>({
@@ -188,7 +187,7 @@ export const healthApi = baseApi.injectEndpoints({
         method: 'PUT',
         body: formData,
       }),
-      transformResponse: (response: BenefitItemResponse) => response,
+      invalidatesTags: ['Health', 'EmployeeBenefits'],
     }),
 
     deleteEmployeeBenefit: builder.mutation<DeleteResponse, string>({
@@ -196,12 +195,13 @@ export const healthApi = baseApi.injectEndpoints({
         url: `/health-partner/employee-benefits/${benefitId}`,
         method: 'DELETE',
       }),
-      transformResponse: (response: DeleteResponse) => response,
+      invalidatesTags: ['Health', 'EmployeeBenefits'],
     }),
   }),
   overrideExisting: true,
 })
 
+// ==================== EXPORT HOOKS ====================
 export const {
   // Health
   useGetHealthQuery,

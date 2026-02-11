@@ -1,31 +1,34 @@
-import express, {Application, Request,Response} from 'express';
-import router from './app/routes';
-import notFound from './app/middlewares/notFound';
-import globalErrorHandler from './app/middlewares/globalErrorHandler';
-import { setupSwagger } from './app/config/swagger';
-import { globalAccessControl } from './app/middlewares/globalAccessControl';
-const app:Application = express();
-import cors from 'cors';
+import express, { Application, Request, Response } from "express";
+import router from "./app/routes";
+import notFound from "./app/middlewares/notFound";
+import globalErrorHandler from "./app/middlewares/globalErrorHandler";
+import { setupSwagger } from "./app/config/swagger";
+import { globalAccessControl } from "./app/middlewares/globalAccessControl";
+const app: Application = express();
+import cors from "cors";
 
 // parsers
 app.use(express.json());
-app.use(cors())
+app.use(cors());
 
 // swagger configuration
 setupSwagger(app);
 
 // Global access control - applies to all routes
 app.use(globalAccessControl());
-
+app.use((req, res, next) => {
+  console.log("REQ:", req.method, req.originalUrl);
+  next();
+});
 // application routes
-app.use('/v1/api', router)
+app.use("/v1/api", router);
 
-const entryRoute = (req:Request, res:Response)=>{
-    const message = 'Surver is running...';
-    res.send(message)
-}
+const entryRoute = (req: Request, res: Response) => {
+  const message = "Surver is running...";
+  res.send(message);
+};
 
-app.get('/', entryRoute)
+app.get("/", entryRoute);
 
 //Not Found
 app.use(notFound);

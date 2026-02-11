@@ -1,3 +1,4 @@
+console.log("Main router loaded");
 import { Router } from "express";
 import { authRouter } from "../modules/auth/auth.routes";
 import { categoryRouter } from "../modules/category/category.routes";
@@ -34,6 +35,9 @@ import { expenseModuleRouter } from "../modules/expense/expense.routes";
 import { videoRouter } from "../modules/video/video.routes";
 import { aboutUsRouter } from "../modules/aboutUs/aboutRoutes";
 import { partnerInHealthRouter } from "../modules/partnerInHealthBenifit/healthRoutes";
+import { servicesRouter } from "../modules/services/servicesRoutes";
+import { restoBannerRouter } from "../modules/restoBanner/restoBannerRoutes";
+import { menuItemsRouter } from "../modules/menu-list/menuListRoutes";
 
 const router = Router();
 const moduleRoutes = [
@@ -189,6 +193,18 @@ const moduleRoutes = [
   {
     path: "/health-partner",
     route: partnerInHealthRouter,
+  },
+  {
+    path: "/services",
+    route: servicesRouter,
+  },
+  {
+    path: "/resto-banner",
+    route: restoBannerRouter,
+  },
+  {
+    path: "/menu-items",
+    route: menuItemsRouter,
   },
 ];
 

@@ -1,9 +1,7 @@
 "use strict";
-var __importDefault =
-  (this && this.__importDefault) ||
-  function (mod) {
-    return mod && mod.__esModule ? mod : { default: mod };
-  };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.setupSwagger = void 0;
 const swagger_jsdoc_1 = __importDefault(require("swagger-jsdoc"));
@@ -12,220 +10,220 @@ const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 const port = process.env.PORT ? Number(process.env.PORT) : 8080;
 const options = {
-  definition: {
-    openapi: "3.0.0",
-    info: {
-      title: "Totally Helthy API",
-      version: "1.0.0",
-      // description: 'A comprehensive e-commerce API built with Express.js and TypeScript',
-      contact: {
-        name: "Totally Helthy Team",
-        email: "support@totallyhelthy.com",
-      },
-      license: {
-        name: "ISC",
-      },
-    },
-    servers: [
-      {
-        url: `http://localhost:${port}`,
-        description: "Development server",
-      },
-      {
-        url: "https://api.atpuae.com",
-        description: "Production server",
-      },
-    ],
-    security: [
-      {
-        bearerAuth: [],
-      },
-    ],
-    tags: [
-      {
-        name: "Authentication",
-        description: "Authentication related endpoints",
-      },
-      {
-        name: "Users",
-        description: "User management endpoints",
-      },
-      {
-        name: "OTP",
-        description: "OTP verification endpoints",
-      },
-      {
-        name: "User Memberships",
-        description: "User membership management endpoints",
-      },
-    ],
-    components: {
-      securitySchemes: {
-        bearerAuth: {
-          type: "http",
-          scheme: "bearer",
-          bearerFormat: "JWT",
+    definition: {
+        openapi: '3.0.0',
+        info: {
+            title: 'Totally Helthy API',
+            version: '1.0.0',
+            // description: 'A comprehensive e-commerce API built with Express.js and TypeScript',
+            contact: {
+                name: 'Totally Helthy Team',
+                email: 'support@totallyhelthy.com',
+            },
+            license: {
+                name: 'ISC',
+            },
         },
-      },
-      schemas: {
-        User: {
-          type: "object",
-          properties: {
-            _id: {
-              type: "string",
-              description: "User ID",
+        servers: [
+            {
+                url: `http://localhost:${port}`,
+                description: 'Development server',
             },
-            name: {
-              type: "string",
-              description: "User full name",
+            {
+                url: 'https://api.atpuae.com',
+                description: 'Production server',
             },
-            email: {
-              type: "string",
-              format: "email",
-              description: "User email address",
+        ],
+        security: [
+            {
+                bearerAuth: [],
             },
-            phone: {
-              type: "string",
-              description: "User phone number",
+        ],
+        tags: [
+            {
+                name: 'Authentication',
+                description: 'Authentication related endpoints',
             },
-            status: {
-              type: "string",
-              enum: ["active", "inactive", "pending"],
-              description: "User account status",
+            {
+                name: 'Users',
+                description: 'User management endpoints',
             },
-            createdAt: {
-              type: "string",
-              format: "date-time",
+            {
+                name: 'OTP',
+                description: 'OTP verification endpoints',
             },
-            updatedAt: {
-              type: "string",
-              format: "date-time",
+            {
+                name: 'User Memberships',
+                description: 'User membership management endpoints',
             },
-          },
-        },
-        Category: {
-          type: "object",
-          properties: {
-            _id: {
-              type: "string",
-              description: "Category ID",
-            },
-            name: {
-              type: "string",
-              description: "Category name",
-            },
-            description: {
-              type: "string",
-              description: "Category description",
-            },
-            image: {
-              type: "string",
-              description: "Category image URL",
-            },
-            status: {
-              type: "string",
-              enum: ["active", "inactive"],
-              description: "Category status",
-            },
-          },
-        },
-        Banner: {
-          type: "object",
-          properties: {
-            _id: {
-              type: "string",
-              description: "Banner ID",
-            },
-            title: {
-              type: "string",
-              description: "Banner title",
-            },
-            image: {
-              type: "string",
-              description: "Banner image URL",
-            },
-            link: {
-              type: "string",
-              description: "Banner link URL",
-            },
-            status: {
-              type: "string",
-              enum: ["active", "inactive"],
-              description: "Banner status",
-            },
-          },
-        },
-        Error: {
-          type: "object",
-          properties: {
-            success: {
-              type: "boolean",
-              example: false,
-            },
-            statusCode: {
-              type: "integer",
-              example: 400,
-            },
-            message: {
-              type: "string",
-              example: "Error message",
-            },
-            errorSources: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  path: {
-                    type: "string",
-                  },
-                  message: {
-                    type: "string",
-                  },
+        ],
+        components: {
+            securitySchemes: {
+                bearerAuth: {
+                    type: 'http',
+                    scheme: 'bearer',
+                    bearerFormat: 'JWT',
                 },
-              },
             },
-          },
+            schemas: {
+                User: {
+                    type: 'object',
+                    properties: {
+                        _id: {
+                            type: 'string',
+                            description: 'User ID',
+                        },
+                        name: {
+                            type: 'string',
+                            description: 'User full name',
+                        },
+                        email: {
+                            type: 'string',
+                            format: 'email',
+                            description: 'User email address',
+                        },
+                        phone: {
+                            type: 'string',
+                            description: 'User phone number',
+                        },
+                        status: {
+                            type: 'string',
+                            enum: ['active', 'inactive', 'pending'],
+                            description: 'User account status',
+                        },
+                        createdAt: {
+                            type: 'string',
+                            format: 'date-time',
+                        },
+                        updatedAt: {
+                            type: 'string',
+                            format: 'date-time',
+                        },
+                    },
+                },
+                Category: {
+                    type: 'object',
+                    properties: {
+                        _id: {
+                            type: 'string',
+                            description: 'Category ID',
+                        },
+                        name: {
+                            type: 'string',
+                            description: 'Category name',
+                        },
+                        description: {
+                            type: 'string',
+                            description: 'Category description',
+                        },
+                        image: {
+                            type: 'string',
+                            description: 'Category image URL',
+                        },
+                        status: {
+                            type: 'string',
+                            enum: ['active', 'inactive'],
+                            description: 'Category status',
+                        },
+                    },
+                },
+                Banner: {
+                    type: 'object',
+                    properties: {
+                        _id: {
+                            type: 'string',
+                            description: 'Banner ID',
+                        },
+                        title: {
+                            type: 'string',
+                            description: 'Banner title',
+                        },
+                        image: {
+                            type: 'string',
+                            description: 'Banner image URL',
+                        },
+                        link: {
+                            type: 'string',
+                            description: 'Banner link URL',
+                        },
+                        status: {
+                            type: 'string',
+                            enum: ['active', 'inactive'],
+                            description: 'Banner status',
+                        },
+                    },
+                },
+                Error: {
+                    type: 'object',
+                    properties: {
+                        success: {
+                            type: 'boolean',
+                            example: false,
+                        },
+                        statusCode: {
+                            type: 'integer',
+                            example: 400,
+                        },
+                        message: {
+                            type: 'string',
+                            example: 'Error message',
+                        },
+                        errorSources: {
+                            type: 'array',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    path: {
+                                        type: 'string',
+                                    },
+                                    message: {
+                                        type: 'string',
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                Success: {
+                    type: 'object',
+                    properties: {
+                        success: {
+                            type: 'boolean',
+                            example: true,
+                        },
+                        statusCode: {
+                            type: 'integer',
+                            example: 200,
+                        },
+                        message: {
+                            type: 'string',
+                            example: 'Operation successful',
+                        },
+                        data: {
+                            type: 'object',
+                            description: 'Response data',
+                        },
+                    },
+                },
+            },
         },
-        Success: {
-          type: "object",
-          properties: {
-            success: {
-              type: "boolean",
-              example: true,
-            },
-            statusCode: {
-              type: "integer",
-              example: 200,
-            },
-            message: {
-              type: "string",
-              example: "Operation successful",
-            },
-            data: {
-              type: "object",
-              description: "Response data",
-            },
-          },
-        },
-      },
+        // security: [
+        //   {
+        //     bearerAuth: [],
+        //   },
+        // ],
     },
-    // security: [
-    //   {
-    //     bearerAuth: [],
-    //   },
-    // ],
-  },
-  apis: [
-    "./src/app/modules/*/*.routes.ts",
-    "./src/app/modules/*/*.controller.ts",
-    "./src/app/modules/*/*.schemas.ts",
-    "./src/app/routes/index.ts",
-  ],
+    apis: [
+        './src/app/modules/*/*.routes.ts',
+        './src/app/modules/*/*.controller.ts',
+        './src/app/modules/*/*.schemas.ts',
+        './src/app/routes/index.ts',
+    ],
 };
 const specs = (0, swagger_jsdoc_1.default)(options);
 const setupSwagger = (app) => {
-  // ElysiaJS-inspired modern Swagger UI with enhanced styling
-  const customCss = `
+    // ElysiaJS-inspired modern Swagger UI with enhanced styling
+    const customCss = `
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
     
     /* Reset and base styles */
@@ -606,45 +604,33 @@ const setupSwagger = (app) => {
       text-decoration: underline;
     }
   `;
-  app.use(
-    "/api-docs",
-    swagger_ui_express_1.default.serve,
-    swagger_ui_express_1.default.setup(specs, {
-      explorer: true,
-      customCss,
-      customSiteTitle: "🚀 Totally Helthy API Documentation",
-      customfavIcon: "https://cdn-icons-png.flaticon.com/512/2721/2721297.png",
-      swaggerOptions: {
-        persistAuthorization: true,
-        displayRequestDuration: true,
-        filter: true,
-        tryItOutEnabled: true,
-        docExpansion: "none",
-        defaultModelsExpandDepth: 2,
-        defaultModelExpandDepth: 2,
-        displayOperationId: false,
-        showExtensions: true,
-        showCommonExtensions: true,
-      },
-    }),
-  );
-  // JSON endpoint for the swagger spec
-  app.get("/api-docs.json", (req, res) => {
-    res.setHeader("Content-Type", "application/json");
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader(
-      "Access-Control-Allow-Methods",
-      "GET, POST, PUT, DELETE, OPTIONS",
-    );
-    res.setHeader(
-      "Access-Control-Allow-Headers",
-      "Origin, X-Requested-With, Content-Type, Accept, Authorization",
-    );
-    res.send(specs);
-  });
-  console.log(
-    "📚 Swagger documentation available at: https://http://localhost:8080/api-docs",
-  );
+    app.use('/api-docs', swagger_ui_express_1.default.serve, swagger_ui_express_1.default.setup(specs, {
+        explorer: true,
+        customCss,
+        customSiteTitle: '🚀 Totally Helthy API Documentation',
+        customfavIcon: 'https://cdn-icons-png.flaticon.com/512/2721/2721297.png',
+        swaggerOptions: {
+            persistAuthorization: true,
+            displayRequestDuration: true,
+            filter: true,
+            tryItOutEnabled: true,
+            docExpansion: 'none',
+            defaultModelsExpandDepth: 2,
+            defaultModelExpandDepth: 2,
+            displayOperationId: false,
+            showExtensions: true,
+            showCommonExtensions: true,
+        },
+    }));
+    // JSON endpoint for the swagger spec
+    app.get('/api-docs.json', (req, res) => {
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+        res.send(specs);
+    });
+    console.log('📚 Swagger documentation available at: https://totally-helth.vercel.app/api-docs');
 };
 exports.setupSwagger = setupSwagger;
 exports.default = specs;
