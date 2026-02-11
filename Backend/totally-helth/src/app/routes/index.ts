@@ -9,7 +9,7 @@ import { faqRouter } from "../modules/faq/faq.routes";
 import { privacyPolicyRouter } from "../modules/privacy-policy/privacy-policy.routes";
 import { TermsConditionRouter } from "../modules/terms-condition/terms-condition.routes";
 import { helpSupportRouter } from "../modules/help-support/help-support.routes";
-import { blogRouter } from "../modules/blog/blog.routes";
+
 import { mealPlanRouter } from "../modules/meal-plan/mealPlan.routes";
 import { customerRouter } from "../modules/customer/customer.routes";
 import { orderRouter } from "../modules/order/order.routes";
@@ -38,6 +38,7 @@ import { partnerInHealthRouter } from "../modules/partnerInHealthBenifit/healthR
 import { servicesRouter } from "../modules/services/servicesRoutes";
 import { restoBannerRouter } from "../modules/restoBanner/restoBannerRoutes";
 import { menuItemsRouter } from "../modules/menu-list/menuListRoutes";
+import { blogsRouter } from "../modules/blogs/blogsRoutes";
 
 const router = Router();
 const moduleRoutes = [
@@ -84,11 +85,6 @@ const moduleRoutes = [
   {
     path: "/help-support",
     route: helpSupportRouter,
-  },
-
-  {
-    path: "/blogs",
-    route: blogRouter,
   },
 
   {
@@ -205,6 +201,10 @@ const moduleRoutes = [
   {
     path: "/menu-items",
     route: menuItemsRouter,
+  },
+  {
+    path: "/blogs",
+    route: blogsRouter,
   },
 ];
 
