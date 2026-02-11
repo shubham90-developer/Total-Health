@@ -64,7 +64,7 @@ const categories = [
 
 const MenuList = () => {
   return (
-    <section className="py-16">
+    <section className="py-16 bg-gray-100">
       <div className="max-w-6xl mx-auto px-6">
         {/* Heading */}
         <div className="text-center mb-12">
@@ -84,7 +84,7 @@ const MenuList = () => {
                 {categories.map((cat, idx) => (
                   <button
                     key={idx}
-                    className={`block w-full text-left px-4 py-2 rounded-md hover:bg-gray-100 cursor-pointer ${
+                    className={`block w-full text-left px-4 py-2 rounded-md text-black hover:bg-gray-100 cursor-pointer ${
                       cat === "Bowls" ? "bg-teal-100 font-semibold" : ""
                     }`}
                   >

@@ -26,7 +26,7 @@ const IntroVideo = () => {
   if (isError) return null;
 
   return (
-    <section className="py-16">
+    <section className="py-16 bg-gray-50">
       <div className="mx-auto max-w-[95%] md:max-w-4xl">
         {/* Thumbnail */}
         <div className="relative w-full h-[300px] md:h-[400px] overflow-hidden rounded-xl">

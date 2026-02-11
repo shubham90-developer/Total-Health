@@ -11,7 +11,7 @@ const OurFood = () => {
           <p className="text-teal-500 font-semibold mb-2">
             Improve your health
           </p>
-          <h2 className="text-3xl font-bold mb-4">Our Food</h2>
+          <h2 className="text-3xl font-bold mb-4 text-black">Our Food</h2>
           <p className="text-gray-700 mb-4 text-sm">
             Our menu is an encyclopedia of international flavours, filled with
             calorie-controlled dishes, inspired by our multicultural hometown of

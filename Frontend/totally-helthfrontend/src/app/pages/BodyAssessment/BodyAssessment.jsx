@@ -1095,7 +1095,7 @@ const BodyAssessment = () => {
   };
 
   return (
-    <section className="py-16">
+    <section className="py-16 bg-gray-100 text-black">
       <div className="max-w-6xl mx-auto px-6 ">
         {/* step 1 */}
         <div>

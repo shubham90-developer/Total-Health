@@ -3,7 +3,7 @@ import React from "react";
 
 const Leadership = () => {
   return (
-    <section className="py-16">
+    <section className="py-16 bg-gray-100">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
           <div>
@@ -18,12 +18,14 @@ const Leadership = () => {
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold mb-4">
+            <h2 className="text-2xl font-bold mb-4 text-black">
               Totally HealthyLeadership
             </h2>
 
             <div className="mb-6">
-              <p className="text-sm font-semibold">Andreas L. Borgmann</p>
+              <p className="text-sm font-semibold text-green-400">
+                Andreas L. Borgmann
+              </p>
               <p className="text-xs text-gray-600">
                 Totally HealthyCo-Founder and Chief Executive Officer
               </p>

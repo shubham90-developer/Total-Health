@@ -9,7 +9,7 @@ const Benefits = () => {
   const [modalOpen, setModalOpen] = useState(false);
   return (
     <>
-      <section className="py-16 ">
+      <section className="py-16 bg-gray-100">
         <div className="max-w-6xl mx-auto px-6">
           {/* Heading */}
           <div className="text-center mb-12">

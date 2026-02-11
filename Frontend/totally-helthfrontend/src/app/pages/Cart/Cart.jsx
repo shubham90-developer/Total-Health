@@ -1,6 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import CustomBtn from "@/app/components/CustomBtn";
+import { FaTimes } from "react-icons/fa";
 
 const mockCartItems = [
   {
@@ -22,7 +23,7 @@ const mockCartItems = [
 const Cart = () => {
   const total = mockCartItems.reduce(
     (acc, item) => acc + item.price * item.quantity,
-    0
+    0,
   );
 
   return (
@@ -56,8 +57,10 @@ const Cart = () => {
                   <p className="text-sm text-gray-500">
                     Price: AED {item.price} × {item.quantity}
                   </p>
-                  <p>Your choice of Non-Veg Bowl:</p>
-                  <ul className="text-xs font-medium list-disc mx-7">
+                  <p className="text-green-500 fw-bold">
+                    Your choice of Non-Veg Bowl:
+                  </p>
+                  <ul className="text-xs font-medium text-black list-disc mx-7">
                     <li>Sweet Chili Chicken Bowl</li>
                     <li>No Rice</li>
                     <li>Protien Cheesecake cup</li>
@@ -67,6 +70,9 @@ const Cart = () => {
                 <p className="text-right font-bold text-gray-700">
                   AED {item.price * item.quantity}
                 </p>
+                <button className="bg-red-400 text-white p-2 rounded-full cursor-pointer">
+                  <FaTimes />
+                </button>
               </div>
             ))}
           </div>

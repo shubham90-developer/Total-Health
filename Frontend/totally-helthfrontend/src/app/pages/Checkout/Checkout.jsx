@@ -5,10 +5,10 @@ import React from "react";
 
 const Checkout = () => {
   return (
-    <section className="py-16">
+    <section className="py-16 bg-gray-100">
       <div className="max-w-6xl mx-auto px-6">
         {/* Top Login Notice */}
-        <div className="border-l-4 border-green-500 bg-green-50 px-4 py-2 text-sm mb-8">
+        <div className="border-l-4 text-black border-green-500 bg-green-50 px-4 py-2 text-sm mb-8">
           Returning customer?{" "}
           <Link href="/login" className="text-green-600 underline">
             Click here to Log In
@@ -89,7 +89,7 @@ const Checkout = () => {
               <h4 className="text-xl font-semibold mb-4 text-gray-800">
                 Checkout Summary
               </h4>
-              <div className="space-y-2 text-sm">
+              <div className="space-y-2 text-black text-sm">
                 <div className="flex justify-between">
                   <span>Total</span>
                   <span>AED 150.00</span>
@@ -111,7 +111,7 @@ const Checkout = () => {
             </div>
 
             {/* Payment Method */}
-            <div className="border border-gray-300 rounded-lg p-6 shadow-sm bg-gray-50">
+            <div className="border text-black border-gray-300 rounded-lg p-6 shadow-sm bg-gray-50">
               <h4 className="text-xl font-semibold mb-4 text-gray-800">
                 Payment Method
               </h4>

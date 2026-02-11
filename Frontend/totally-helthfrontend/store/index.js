@@ -11,6 +11,7 @@ import { testimonialsApi } from "./testimonials/testimonialsApi";
 import { privacyPolicyApi } from "./privacyPolicy/privacyPolicy";
 import { termsConditionsApi } from "./termsConditions/termsConditionsApi";
 import { faqApi } from "./faq/faqApi";
+import { aboutApi } from "./about/aboutApi";
 
 export const store = configureStore({
   reducer: {
@@ -26,6 +27,7 @@ export const store = configureStore({
     [privacyPolicyApi.reducerPath]: privacyPolicyApi.reducer,
     [termsConditionsApi.reducerPath]: termsConditionsApi.reducer,
     [faqApi.reducerPath]: faqApi.reducer,
+    [aboutApi.reducerPath]: aboutApi.reducer,
   },
 
   middleware: (getDefaultMiddleware) =>
@@ -42,5 +44,6 @@ export const store = configureStore({
       privacyPolicyApi.middleware,
       termsConditionsApi.middleware,
       faqApi.middleware,
+      aboutApi.middleware,
     ),
 });

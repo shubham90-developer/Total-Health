@@ -38,7 +38,7 @@ const Profile = () => {
     switch (activeTab) {
       case "Profile":
         return (
-          <form className="space-y-10 p-6">
+          <form className="space-y-10 p-6 text-black">
             {/* Personal Details */}
             <section>
               <h3 className="text-lg font-semibold mb-4">Personal Details</h3>
@@ -97,7 +97,7 @@ const Profile = () => {
 
             {/* Optional Info */}
             <section>
-              <h3 className="text-lg font-semibold mb-4">
+              <h3 className="text-lg text-black font-semibold mb-4">
                 We'd love to get to know you better (Optional)
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -118,7 +118,9 @@ const Profile = () => {
 
             {/* Delivery Address */}
             <section>
-              <h3 className="text-lg font-semibold mb-4">Delivery Address</h3>
+              <h3 className="text-lg text-black font-semibold mb-4">
+                Delivery Address
+              </h3>
               <div className="flex gap-6 mb-4">
                 {["Home", "Work", "Other"].map((label) => (
                   <label
@@ -164,7 +166,7 @@ const Profile = () => {
 
             {/* Delivery Selection */}
             <section>
-              <h3 className="text-lg font-semibold mb-4">Delivery</h3>
+              <h3 className="text-lg to-black font-semibold mb-4">Delivery</h3>
               <div className="flex gap-6 mb-4">
                 {["Abu Dhabi", "Dubai", "Al Ain"].map((city) => (
                   <label key={city} className="flex items-center gap-2 text-sm">
@@ -198,7 +200,7 @@ const Profile = () => {
 
       case "Change Password":
         return (
-          <div className="p-6">
+          <div className="p-6 text-black">
             <h3 className="text-lg font-semibold mb-4">Change Password</h3>
             <div className="grid grid-cols-1 md:grid-cols-2  gap-4 ">
               <input
@@ -225,7 +227,7 @@ const Profile = () => {
 
       case "My Meal Plan":
         return (
-          <div className="p-6">
+          <div className="p-6 text-black">
             <h3 className="text-lg font-semibold mb-4">My Meal Plan</h3>
             {/* Plan Details */}
             <div className="bg-[#e4f5f0] p-3 rounded-lg text-sm flex gap-2 mb-5">
@@ -252,7 +254,7 @@ const Profile = () => {
 
       case "My Orders":
         return (
-          <div className="p-6 ">
+          <div className="p-6 text-black">
             <h3 className="text-lg font-semibold mb-4">My Orders</h3>
             {/* Left: Cart Items */}
             <div className="lg:col-span-2 space-y-6">
@@ -294,7 +296,7 @@ const Profile = () => {
 
       case "Logout":
         return (
-          <div className="p-6 text-center">
+          <div className="p-6 text-center text-black">
             <h3 className="text-lg font-semibold mb-4">
               Are you sure you want to log out?
             </h3>
@@ -320,7 +322,7 @@ const Profile = () => {
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-200 overflow-auto">
+        <div className="flex border-b text-black border-gray-200 overflow-auto">
           {tabs.map((tab) => (
             <button
               key={tab}

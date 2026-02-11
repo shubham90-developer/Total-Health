@@ -42,7 +42,7 @@ const MenuDetails = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-              <select className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500 text-xs">
+              <select className="w-full border text-black border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500 text-xs">
                 <option value="">Your choice of Non-Veg Bowl</option>
                 <option value="1380">Sweet Chilli Chicken Bowl</option>
                 <option value="1381">Power Chicken Bowl</option>
@@ -51,7 +51,7 @@ const MenuDetails = () => {
                 <option value="1384">Beef Bibimbap</option>
               </select>
 
-              <select className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500 text-xs">
+              <select className="w-full border text-black border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500 text-xs">
                 <option value="">Select your free side</option>
                 <option value="-1">No Rice</option>
                 <option value="781">Brown Rice</option>
@@ -59,7 +59,7 @@ const MenuDetails = () => {
                 <option value="1115">Low Carb Cauli Rice</option>
               </select>
 
-              <select className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500 text-xs">
+              <select className="w-full border text-black border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500 text-xs">
                 <option value="">Your choice of Dessert</option>
                 <option value="1298">Protein Cheesecake Cup</option>
                 <option value="1385">Red Velvet Cake</option>
@@ -73,7 +73,7 @@ const MenuDetails = () => {
                 <option value="1194">Fresh Fruit Salad</option>
               </select>
 
-              <select className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500 text-xs">
+              <select className="w-full border text-black border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500 text-xs">
                 <option value="">Your choice of Drink</option>
                 <option value="1363">Black Lemonade</option>
                 <option value="1364">Pink Lemonade</option>
@@ -92,14 +92,16 @@ const MenuDetails = () => {
               <div className="flex items-center gap-4">
                 <button
                   onClick={decreaseQty}
-                  className="border border-gray-300 text-xl w-10 h-10 rounded hover:bg-gray-100 cursor-pointer"
+                  className="border text-black border-gray-300 text-xl w-10 h-10 rounded hover:bg-gray-100 cursor-pointer"
                 >
                   -
                 </button>
-                <span className="text-lg font-semibold">{quantity}</span>
+                <span className="text-lg text-black font-semibold">
+                  {quantity}
+                </span>
                 <button
                   onClick={increaseQty}
-                  className="border border-gray-300 text-xl w-10 h-10 rounded hover:bg-gray-100 cursor-pointer"
+                  className="border border-gray-300 text-black text-xl w-10 h-10 rounded hover:bg-gray-100 cursor-pointer"
                 >
                   +
                 </button>

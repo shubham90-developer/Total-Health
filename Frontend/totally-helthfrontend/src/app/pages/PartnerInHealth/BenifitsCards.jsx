@@ -32,7 +32,7 @@ const employees = [
 
 const BenefitColumn = ({ title, subtitle, items }) => (
   <div className="w-full md:w-1/2 border rounded-2xl p-8 bg-[#f2fef2]">
-    <h3 className="text-2xl font-bold text-center mb-1">{title}</h3>
+    <h3 className="text-2xl font-bold text-center mb-1 text-black">{title}</h3>
     <p className="text-center text-gray-600 mb-6 text-sm">{subtitle}</p>
     <ul className="space-y-4">
       {items.map((item, index) => (
