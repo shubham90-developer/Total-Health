@@ -7,11 +7,9 @@ const benefitItemSchema = new Schema(
   {
     icon: {
       type: String,
-      required: true,
     },
     text: {
       type: String,
-      required: true,
     },
     status: {
       type: String,
@@ -27,15 +25,12 @@ const partnerBenefitsSchema = new Schema(
   {
     title: {
       type: String,
-      required: true,
     },
     subTitle: {
       type: String,
-      required: true,
     },
     image: {
       type: String,
-      required: true,
     },
   },
   { _id: true },
@@ -46,15 +41,13 @@ const benefitSectionSchema = new Schema(
   {
     title: {
       type: String,
-      required: true,
     },
     subtitle: {
       type: String,
-      required: true,
     },
     benefits: {
       type: [benefitItemSchema],
-      required: true,
+
       default: [],
     },
   },
@@ -66,15 +59,12 @@ const whyPartnerSchema = new Schema(
   {
     title: {
       type: String,
-      required: true,
     },
     description: {
       type: String,
-      required: true,
     },
     video: {
       type: String,
-      required: true,
     },
   },
   { _id: true },
@@ -85,19 +75,15 @@ const healthSchema = new Schema<IHealth>(
   {
     PartnerinHealthBenefits: {
       type: partnerBenefitsSchema,
-      required: true,
     },
     BenefitForCompanies: {
       type: benefitSectionSchema,
-      required: true,
     },
     BenefitForEmployees: {
       type: benefitSectionSchema,
-      required: true,
     },
     whyPartner: {
       type: whyPartnerSchema,
-      required: true,
     },
     isActive: {
       type: Boolean,
