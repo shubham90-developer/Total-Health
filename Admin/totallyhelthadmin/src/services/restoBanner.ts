@@ -50,7 +50,7 @@ export const restoBannerApi = baseApi.injectEndpoints({
     // GET /resto-banners?status=active|inactive
     getRestoBanners: build.query<GetRestoBannersResponse, { status?: 'active' | 'inactive' } | void>({
       query: (params) => ({
-        url: '/resto-banners',
+        url: '/resto-banner',
         method: 'GET',
         params: params ?? {},
       }),
@@ -59,7 +59,7 @@ export const restoBannerApi = baseApi.injectEndpoints({
 
     // GET /resto-banners/:id
     getRestoBannerById: build.query<RestoBanner, string>({
-      query: (id) => ({ url: `/resto-banners/${id}`, method: 'GET' }),
+      query: (id) => ({ url: `/resto-banner/${id}`, method: 'GET' }),
       transformResponse: (res: GetRestoBannerResponse) => res?.data,
       providesTags: (_r, _e, id) => [{ type: 'RestoBanner' as const, id }],
     }),
@@ -67,7 +67,7 @@ export const restoBannerApi = baseApi.injectEndpoints({
     // POST /resto-banners  — body: FormData with field "file"
     createRestoBanner: build.mutation<RestoBanner, FormData>({
       query: (body) => ({
-        url: '/resto-banners',
+        url: '/resto-banner',
         method: 'POST',
         body,
       }),
@@ -78,7 +78,7 @@ export const restoBannerApi = baseApi.injectEndpoints({
     // PATCH /resto-banners/:id  — body: FormData with optional "file" / "status"
     updateRestoBanner: build.mutation<RestoBanner, { id: string; data: FormData }>({
       query: ({ id, data }) => ({
-        url: `/resto-banners/${id}`,
+        url: `/resto-banner/${id}`,
         method: 'PATCH',
         body: data,
       }),
@@ -91,7 +91,7 @@ export const restoBannerApi = baseApi.injectEndpoints({
 
     // DELETE /resto-banners/:id
     deleteRestoBanner: build.mutation<RestoBanner, string>({
-      query: (id) => ({ url: `/resto-banners/${id}`, method: 'DELETE' }),
+      query: (id) => ({ url: `/resto-banner/${id}`, method: 'DELETE' }),
       transformResponse: (res: DeleteRestoBannerResponse) => res?.data,
       invalidatesTags: (_r, _e, id) => [
         { type: 'RestoBanner', id },

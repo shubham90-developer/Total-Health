@@ -8,7 +8,9 @@ export const brandApi = baseApi.injectEndpoints({
       query: () => ({ url: '/brands', method: 'GET' }),
       transformResponse: (res: any) => res?.data ?? [],
       providesTags: (result) =>
-        result ? [...result.map(({ _id }) => ({ type: 'Brand' as const, id: _id })), { type: 'Brand' as const, id: 'LIST' }] : [{ type: 'Brand', id: 'LIST' }],
+        result
+          ? [...result.map(({ _id }) => ({ type: 'Brand' as const, id: _id })), { type: 'Brand' as const, id: 'LIST' }]
+          : [{ type: 'Brand', id: 'LIST' }],
     }),
     getBrandById: build.query<Brand, string>({
       query: (id) => ({ url: `/brands/${id}`, method: 'GET' }),
@@ -23,16 +25,21 @@ export const brandApi = baseApi.injectEndpoints({
     updateBrand: build.mutation<Brand, { id: string; data: Partial<Brand> }>({
       query: ({ id, data }) => ({ url: `/brands/${id}`, method: 'PATCH', body: data }),
       transformResponse: (res: any) => res?.data,
-      invalidatesTags: (_r, _e, { id }) => [{ type: 'Brand', id }, { type: 'Brand', id: 'LIST' }],
+      invalidatesTags: (_r, _e, { id }) => [
+        { type: 'Brand', id },
+        { type: 'Brand', id: 'LIST' },
+      ],
     }),
     deleteBrand: build.mutation<{ success: boolean }, string>({
       query: (id) => ({ url: `/brands/${id}`, method: 'DELETE' }),
       transformResponse: (res: any) => ({ success: !!res }),
-      invalidatesTags: (_r, _e, id) => [{ type: 'Brand', id }, { type: 'Brand', id: 'LIST' }],
+      invalidatesTags: (_r, _e, id) => [
+        { type: 'Brand', id },
+        { type: 'Brand', id: 'LIST' },
+      ],
     }),
   }),
   overrideExisting: true,
 })
 
 export const { useGetBrandsQuery, useGetBrandByIdQuery, useCreateBrandMutation, useUpdateBrandMutation, useDeleteBrandMutation } = brandApi
-

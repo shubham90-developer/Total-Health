@@ -109,6 +109,7 @@ export const baseApi = createApi({
     'RestoBanner',
     'MenuCategories',
     'MenuItems',
+    'FAQs',
   ],
   endpoints: () => ({}),
 })
