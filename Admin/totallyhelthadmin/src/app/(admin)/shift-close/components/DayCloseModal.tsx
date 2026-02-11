@@ -1,0 +1,1128 @@
+'use client'
+import React, { useState, useEffect } from 'react'
+import { Modal, Form, Button, Alert, Row, Col, Card } from 'react-bootstrap'
+import { useRouter } from 'next/navigation'
+import { useDayCloseMutation, useGenerateThermalReceiptQuery } from '@/services/shiftApi'
+import { printThermalReceipt } from '@/utils/thermalPrint'
+import { downloadThermalReceipt, downloadThermalPDFAdvanced } from '@/utils/thermalDownload'
+import { fetchThermalReceiptJson, generateThermalReceiptHtml, type ThermalReceiptJsonData } from '@/utils/thermalJsonApi'
+import ThermalReceiptFromJson from '@/components/ThermalReceiptFromJson'
+
+interface DayCloseModalProps {
+  show: boolean
+  onHide: () => void
+  onSuccess?: () => void
+}
+
+const DayCloseModal: React.FC<DayCloseModalProps> = ({ show, onHide, onSuccess }) => {
+  const router = useRouter()
+  const [dayClose, { isLoading, error }] = useDayCloseMutation()
+  const [note, setNote] = useState('')
+  const [showThermalReport, setShowThermalReport] = useState(false)
+  const [thermalReport, setThermalReport] = useState('')
+  const [dayCloseResult, setDayCloseResult] = useState<any>(null)
+  const [showThermalButton, setShowThermalButton] = useState(false)
+  const [currentDate, setCurrentDate] = useState('')
+  const [isGeneratingThermal, setIsGeneratingThermal] = useState(false)
+  const [thermalError, setThermalError] = useState<string | null>(null)
+  const [isDayClosed, setIsDayClosed] = useState(false)
+  
+  // New JSON-based thermal receipt states
+  const [jsonThermalData, setJsonThermalData] = useState<ThermalReceiptJsonData['data'] | null>(null)
+  const [isGeneratingJsonThermal, setIsGeneratingJsonThermal] = useState(false)
+  const [jsonThermalError, setJsonThermalError] = useState<string | null>(null)
+  const [showJsonThermalReport, setShowJsonThermalReport] = useState(false)
+  
+  // Unpaid bills error handling
+  const [unpaidBillsError, setUnpaidBillsError] = useState<any>(null)
+  const [showUnpaidBillsModal, setShowUnpaidBillsModal] = useState(false)
+  
+  // Thermal receipt query - only trigger when we have a date and day is closed
+  const { data: thermalReceiptData, isLoading: isThermalLoading, error: thermalQueryError } = useGenerateThermalReceiptQuery(
+    currentDate, 
+    { skip: !currentDate || !isDayClosed }
+  )
+  
+  // Denomination state
+  const [denominations, setDenominations] = useState({
+    denomination1000: 0,
+    denomination500: 0,
+    denomination200: 0,
+    denomination100: 0,
+    denomination50: 0,
+    denomination20: 0,
+    denomination10: 0,
+    denomination5: 0,
+    denomination2: 0,
+    denomination1: 0,
+  })
+  
+  // Numpad state
+  const [activeField, setActiveField] = useState<string | null>(null)
+  const [inputValue, setInputValue] = useState('')
+
+  // Set default current date when modal opens (no API call)
+  useEffect(() => {
+    if (show && !currentDate) {
+      const today = new Date().toISOString().split('T')[0]
+      setCurrentDate(today)
+      console.log('Set default current date:', today)
+    }
+  }, [show, currentDate])
+
+  // Auto-show thermal report when data is available
+  useEffect(() => {
+    if (thermalReceiptData && showThermalButton) {
+      console.log('Thermal receipt data received, but not setting thermalReport directly')
+      // Don't set thermalReport here as it's an object, not HTML
+      // The thermal report should be generated through the proper function
+    }
+  }, [thermalReceiptData, showThermalButton])
+
+  // Debug thermal report content
+  useEffect(() => {
+    if (thermalReport) {
+      console.log('Thermal report updated:', {
+        type: typeof thermalReport,
+        length: thermalReport.length,
+        preview: thermalReport.substring(0, 200) + '...',
+        isHTML: thermalReport.includes('<html>') || thermalReport.includes('<!DOCTYPE'),
+        isObject: thermalReport === '[object Object]',
+        toString: thermalReport.toString().substring(0, 100)
+      })
+    }
+  }, [thermalReport])
+
+  // Denomination values
+  const denominationValues = {
+    denomination1000: 1000,
+    denomination500: 500,
+    denomination200: 200,
+    denomination100: 100,
+    denomination50: 50,
+    denomination20: 20,
+    denomination10: 10,
+    denomination5: 5,
+    denomination2: 2,
+    denomination1: 1,
+  }
+
+  // Calculate total for a denomination
+  const calculateTotal = (denomination: string) => {
+    const count = denominations[denomination as keyof typeof denominations]
+    const value = denominationValues[denomination as keyof typeof denominationValues]
+    return (count * value).toFixed(2)
+  }
+
+  // Calculate grand total
+  const calculateGrandTotal = () => {
+    return Object.keys(denominations).reduce((total, denomination) => {
+      const count = denominations[denomination as keyof typeof denominations]
+      const value = denominationValues[denomination as keyof typeof denominationValues]
+      return total + (count * value)
+    }, 0).toFixed(2)
+  }
+
+  // Handle numpad input
+  const handleNumpadInput = (value: string) => {
+    console.log('Numpad clicked:', value, 'Active field:', activeField)
+    
+    if (value === 'C') {
+      // Clear all denominations
+      setInputValue('')
+      setDenominations({
+        denomination1000: 0,
+        denomination500: 0,
+        denomination200: 0,
+        denomination100: 0,
+        denomination50: 0,
+        denomination20: 0,
+        denomination10: 0,
+        denomination5: 0,
+        denomination2: 0,
+        denomination1: 0,
+      })
+      setActiveField(null)
+    } else if (value === '⌫') {
+      if (activeField) {
+        const newValue = inputValue.slice(0, -1)
+        setInputValue(newValue)
+        // Update the denomination immediately
+        const numValue = parseInt(newValue) || 0
+        setDenominations(prev => ({
+          ...prev,
+          [activeField]: numValue
+        }))
+      }
+    } else {
+      if (activeField) {
+        const newValue = inputValue + value
+        setInputValue(newValue)
+        // Update the denomination immediately
+        const numValue = parseInt(newValue) || 0
+        setDenominations(prev => ({
+          ...prev,
+          [activeField]: numValue
+        }))
+        console.log('Updated denomination:', activeField, 'to', numValue)
+      } else {
+        console.log('No active field - numpad input ignored')
+      }
+    }
+  }
+
+  // Handle field focus
+  const handleFieldFocus = (field: string) => {
+    console.log('Field focused:', field)
+    setActiveField(field)
+    const currentValue = denominations[field as keyof typeof denominations]
+    setInputValue(currentValue > 0 ? currentValue.toString() : '')
+    console.log('Active field set to:', field, 'Current value:', currentValue)
+  }
+
+  // Handle field blur
+  const handleFieldBlur = () => {
+    // The denomination is already updated in real-time, so just clear the active state
+    setActiveField(null)
+    setInputValue('')
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    // Only proceed with day close API call when user explicitly confirms
+    try {
+      // Filter out zero denominations to only send non-zero values
+      const filteredDenominations = Object.fromEntries(
+        Object.entries(denominations).filter(([_, value]) => value > 0)
+      )
+      
+      console.log('Performing day close with user confirmation...')
+      const result = await dayClose({ 
+        note,
+        denominations: Object.keys(filteredDenominations).length > 0 ? filteredDenominations : undefined
+      }).unwrap()
+      
+      if (result.message) {
+        setDayCloseResult(result)
+        // Set current date for thermal receipt generation
+        const today = new Date().toISOString().split('T')[0]
+        setCurrentDate(today)
+        setShowThermalButton(true)
+        setIsDayClosed(true) // Mark day as closed
+        // Show thermal report if available
+        if (result.thermalReport) {
+          // Ensure thermalReport is a string, not an object
+          const thermalReportString = typeof result.thermalReport === 'string' 
+            ? result.thermalReport 
+            : JSON.stringify(result.thermalReport)
+          setThermalReport(thermalReportString)
+          setShowThermalReport(true)
+        }
+      }
+    } catch (err: any) {
+      console.error('Failed to perform day close:', err)
+      
+      // Check if the error indicates unpaid bills
+      const errorMessage = err?.data?.message || err?.message || ''
+      const isUnpaidBillsError = errorMessage.toLowerCase().includes('unpaid') && 
+                                (errorMessage.toLowerCase().includes('order') || errorMessage.toLowerCase().includes('bill'))
+      
+      if (isUnpaidBillsError) {
+        // Show unpaid bills error with navigation options
+        console.log('Unpaid bills detected, showing error modal')
+        setUnpaidBillsError({
+          message: errorMessage,
+          unpaidOrdersCount: err?.data?.unpaidOrdersCount || 0,
+          unpaidOrders: err?.data?.unpaidOrders || [],
+          actionRequired: err?.data?.actionRequired || 'Please mark all orders as paid before closing the day'
+        })
+        setShowUnpaidBillsModal(true)
+        return
+      }
+      
+      // Check if the error indicates day is already closed
+      const isDayAlreadyClosed = errorMessage.toLowerCase().includes('already') && 
+                                errorMessage.toLowerCase().includes('day') && 
+                                errorMessage.toLowerCase().includes('close')
+      
+      if (isDayAlreadyClosed) {
+        // Instead of showing error, show thermal receipt button
+        console.log('Day already closed, showing thermal receipt option')
+        const today = new Date().toISOString().split('T')[0]
+        setCurrentDate(today)
+        setShowThermalButton(true)
+        setIsDayClosed(true) // Mark day as closed
+        setDayCloseResult({
+          message: 'Day close has already been performed for this date',
+          closedCount: 0,
+          dayCloseTime: new Date().toISOString()
+        })
+      }
+    }
+  }
+
+  const handleGenerateThermalReceipt = async () => {
+    console.log('Generate Thermal Receipt clicked')
+    console.log('Current date:', currentDate)
+    console.log('Is day closed:', isDayClosed)
+    
+    // Check if day has been closed
+    if (!isDayClosed) {
+      setThermalError('Cannot generate thermal receipt: Day has not been closed yet. Please close the day first.')
+      return
+    }
+    
+    setIsGeneratingThermal(true)
+    setThermalError(null) // Clear any previous errors
+    
+    try {
+      // Ensure we have a current date
+      const dateToUse = currentDate || new Date().toISOString().split('T')[0]
+      if (!currentDate) {
+        setCurrentDate(dateToUse)
+        console.log('Set current date to:', dateToUse)
+      }
+      
+      // Use the JSON thermal receipt generation
+      console.log('Making API call to thermal receipt JSON endpoint...')
+      const jsonData = await fetchThermalReceiptJson(dateToUse)
+      
+      console.log('JSON data received:', jsonData)
+      
+      if (jsonData.success && jsonData.data) {
+        console.log('JSON data structure:', {
+          hasHeader: !!jsonData.data.header,
+          hasShiftDetails: !!jsonData.data.shiftDetails,
+          hasSummary: !!jsonData.data.summary,
+          dataKeys: Object.keys(jsonData.data)
+        })
+        
+        // Generate HTML from JSON data using the utility function
+        const htmlContent = generateThermalReceiptHtml(jsonData.data)
+        console.log('Generated HTML content:', htmlContent.substring(0, 200) + '...')
+        console.log('Full HTML content length:', htmlContent.length)
+        console.log('HTML content type:', typeof htmlContent)
+        console.log('HTML content starts with:', htmlContent.substring(0, 50))
+        
+        setThermalReport(htmlContent)
+        setShowThermalReport(true)
+      } else {
+        console.error('JSON data validation failed:', jsonData)
+        setThermalError('Failed to generate thermal receipt: ' + (jsonData.message || 'Unknown error'))
+      }
+    } catch (error) {
+      console.error('Failed to generate thermal receipt:', error)
+      setThermalError('Error generating thermal receipt: ' + (error as any)?.message || 'Unknown error')
+    } finally {
+      setIsGeneratingThermal(false)
+    }
+  }
+
+  const handleOpenThermalReceiptPage = () => {
+    const dateToUse = currentDate || new Date().toISOString().split('T')[0]
+    router.push(`/thermal-receipt?date=${dateToUse}`)
+  }
+
+  const handlePrintThermalReport = () => {
+    if (thermalReport) {
+      // Use backend thermal response directly without modification
+      try {
+        // Create blob with backend thermal HTML directly
+        const blob = new Blob([thermalReport], { type: 'text/html' })
+        const url = URL.createObjectURL(blob)
+        
+        // Create download link
+        const link = document.createElement('a')
+        link.href = url
+        link.download = 'thermal-receipt.html'
+        link.style.display = 'none'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+        
+      } catch (error) {
+        console.error('Direct thermal download failed:', error)
+        
+        // Fallback: Try to open in new window for printing
+        try {
+          const printWindow = window.open('', '_blank', 'width=200,height=800,scrollbars=no,resizable=no')
+          if (printWindow) {
+            printWindow.document.write(thermalReport)
+            printWindow.document.close()
+            printWindow.focus()
+            printWindow.print()
+            printWindow.close()
+          }
+        } catch (printError) {
+          console.error('Print window failed:', printError)
+          
+          // Final fallback: Simple text download
+          const textContent = thermalReport.replace(/<[^>]*>/g, '') // Remove HTML tags
+          const blob = new Blob([textContent], { type: 'text/plain' })
+          const url = URL.createObjectURL(blob)
+          const link = document.createElement('a')
+          link.href = url
+          link.download = 'thermal-receipt.txt'
+          link.style.display = 'none'
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          URL.revokeObjectURL(url)
+        }
+      }
+    }
+  }
+
+  // New function to handle JSON-based thermal receipt generation
+  const handleGenerateJsonThermalReceipt = async () => {
+    console.log('Generate JSON Thermal Receipt clicked')
+    console.log('Current date:', currentDate)
+    console.log('Is day closed:', isDayClosed)
+    
+    // Check if day has been closed
+    if (!isDayClosed) {
+      setJsonThermalError('Cannot generate thermal receipt: Day has not been closed yet. Please close the day first.')
+      return
+    }
+    
+    setIsGeneratingJsonThermal(true)
+    setJsonThermalError(null) // Clear any previous errors
+    
+    try {
+      // Ensure we have a current date
+      const dateToUse = currentDate || new Date().toISOString().split('T')[0]
+      if (!currentDate) {
+        setCurrentDate(dateToUse)
+        console.log('Set current date to:', dateToUse)
+      }
+      
+      // Make API call to fetch JSON data
+      console.log('Making API call to thermal receipt JSON endpoint...')
+      const jsonData = await fetchThermalReceiptJson(dateToUse)
+      
+      console.log('JSON data received:', jsonData)
+      setJsonThermalData(jsonData.data)
+      setShowJsonThermalReport(true)
+      
+    } catch (error) {
+      console.error('Failed to generate JSON thermal receipt:', error)
+      setJsonThermalError('Error generating thermal receipt: ' + (error as any)?.message || 'Unknown error')
+    } finally {
+      setIsGeneratingJsonThermal(false)
+    }
+  }
+
+  const handlePrintJsonThermalReport = () => {
+    if (jsonThermalData) {
+      try {
+        // Generate HTML from JSON data
+        const htmlContent = generateThermalReceiptHtml(jsonThermalData)
+        
+        // Create blob with generated HTML
+        const blob = new Blob([htmlContent], { type: 'text/html' })
+        const url = URL.createObjectURL(blob)
+        
+        // Create download link
+        const link = document.createElement('a')
+        link.href = url
+        link.download = 'thermal-receipt-json.html'
+        link.style.display = 'none'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+        
+      } catch (error) {
+        console.error('JSON thermal download failed:', error)
+        
+        // Fallback: Try to open in new window for printing
+        try {
+          const htmlContent = generateThermalReceiptHtml(jsonThermalData)
+          const printWindow = window.open('', '_blank', 'width=200,height=800,scrollbars=no,resizable=no')
+          if (printWindow) {
+            printWindow.document.write(htmlContent)
+            printWindow.document.close()
+            printWindow.focus()
+            printWindow.print()
+            printWindow.close()
+          }
+        } catch (printError) {
+          console.error('Print window failed:', printError)
+        }
+      }
+    }
+  }
+
+  const handleCloseModal = () => {
+    setShowThermalReport(false)
+    setThermalReport('')
+    setDayCloseResult(null)
+    setShowThermalButton(false)
+    setCurrentDate('')
+    setActiveField(null)
+    setInputValue('')
+    setIsGeneratingThermal(false)
+    setThermalError(null) // Clear thermal error state
+    setIsDayClosed(false) // Reset day closed state
+    
+    // Reset JSON thermal states
+    setJsonThermalData(null)
+    setIsGeneratingJsonThermal(false)
+    setJsonThermalError(null)
+    setShowJsonThermalReport(false)
+    
+    // Reset unpaid bills states
+    setUnpaidBillsError(null)
+    setShowUnpaidBillsModal(false)
+    
+    onSuccess?.()
+    onHide()
+    setNote('')
+    setDenominations({
+      denomination1000: 0,
+      denomination500: 0,
+      denomination200: 0,
+      denomination100: 0,
+      denomination50: 0,
+      denomination20: 0,
+      denomination10: 0,
+      denomination5: 0,
+      denomination2: 0,
+      denomination1: 0,
+    })
+  }
+
+  return (
+    <Modal show={show} onHide={showThermalReport || showJsonThermalReport ? handleCloseModal : onHide} centered size="xl">
+      <Modal.Header closeButton>
+        <Modal.Title>
+          {showThermalReport ? 'Day Close Report' : showJsonThermalReport ? 'Thermal Receipt' : 'Day Close'}
+        </Modal.Title>
+      </Modal.Header>
+      
+      {!showThermalReport && !showJsonThermalReport && (
+        <Form onSubmit={handleSubmit}>
+          <Modal.Body>
+            {error && !dayCloseResult && (
+              <Alert variant="danger" className="mb-3">
+                {'data' in error ? (error.data as any)?.message || 'Failed to perform day close' : 'Failed to perform day close'}
+              </Alert>
+            )}
+
+            {dayCloseResult && showThermalButton && (
+              <Alert variant={dayCloseResult.message.includes('already') ? 'info' : 'success'} className="mb-3">
+                <strong>{dayCloseResult.message.includes('already') ? 'Day Already Closed' : 'Day Close Successful!'}</strong> {dayCloseResult.message}
+                <div className="mt-2 d-flex gap-2 flex-wrap">
+                  {/* <Button 
+                    variant="primary" 
+                    size="sm" 
+                    onClick={handleGenerateThermalReceipt}
+                    disabled={isGeneratingThermal}
+                  >
+                    {isGeneratingThermal ? 'Generating...' : 'Generate Thermal Receipts'}
+                  </Button> */}
+                  <Button 
+                    variant="success" 
+                    size="sm" 
+                    onClick={handleGenerateJsonThermalReceipt}
+                    disabled={isGeneratingJsonThermal}
+                  >
+                    {isGeneratingJsonThermal ? 'Generating Thermal Receipt...' : 'Generate Thermal Receipt'}
+                  </Button>
+                  {(isGeneratingThermal || isGeneratingJsonThermal) && (
+                    <div className="mt-2">
+                      <small className="text-info">Loading thermal receipt data...</small>
+                    </div>
+                  )}
+                </div>
+              </Alert>
+            )}
+
+            {jsonThermalError && (
+              <Alert variant="danger" className="mb-3">
+                <strong>JSON Thermal Receipt Error:</strong> {jsonThermalError}
+              </Alert>
+            )}
+
+            {!dayCloseResult && (
+            <Alert variant="warning" className="mb-3">
+              <strong>Warning:</strong> This action will close all open shifts for today. This operation cannot be undone.
+            </Alert>
+            )}
+
+            <Form.Group className="mb-3">
+              <Form.Label>Note (Optional)</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={3}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Enter any notes for day close"
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Cash Denominations (Optional)</Form.Label>
+              <Row>
+                <Col lg={7}>
+                  <div className="table-responsive">
+                    <table className="table table-bordered table-sm">
+                      <thead className="table-light">
+                        <tr>
+                          <th style={{ width: '20%' }}>Value</th>
+                          <th style={{ width: '5%' }}>X</th>
+                          <th style={{ width: '25%' }}>Count</th>
+                          <th style={{ width: '5%' }}>=</th>
+                          <th style={{ width: '20%' }}>Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Object.keys(denominations).map((denomination) => {
+                          const value = denominationValues[denomination as keyof typeof denominationValues]
+                          const count = denominations[denomination as keyof typeof denominations]
+                          const isActive = activeField === denomination
+                          const displayValue = isActive ? inputValue : count.toString()
+                          
+                          return (
+                            <tr key={denomination} style={{ height: '50px' }}>
+                              <td className="align-middle">
+                                <strong>{value} Denom</strong>
+                              </td>
+                              <td className="text-center align-middle">X</td>
+                              <td>
+                    <Form.Control
+                                  type="text"
+                                  value={displayValue}
+                                  onClick={() => handleFieldFocus(denomination)}
+                                  onFocus={() => handleFieldFocus(denomination)}
+                                  onBlur={handleFieldBlur}
+                                  onChange={(e) => {
+                                    if (isActive) {
+                                      const newValue = e.target.value
+                                      setInputValue(newValue)
+                                      // Update denomination immediately
+                                      const numValue = parseInt(newValue) || 0
+                                      setDenominations(prev => ({
+                        ...prev,
+                                        [denomination]: numValue
+                                      }))
+                                    }
+                                  }}
+                                  style={{
+                                    backgroundColor: isActive ? '#fff3cd' : 'white',
+                                    border: isActive ? '2px solid #ffc107' : '1px solid #ced4da',
+                                    height: '35px',
+                                    fontSize: '14px',
+                                    cursor: 'pointer'
+                                  }}
+                      placeholder="0"
+                                  readOnly={false}
+                                />
+                              </td>
+                              <td className="text-center align-middle">=</td>
+                              <td className="align-middle">
+                                <strong>{calculateTotal(denomination)}</strong>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                        <tr style={{ backgroundColor: '#d4edda', height: '50px' }}>
+                          <td colSpan={4} className="align-middle">
+                            <strong>Total</strong>
+                          </td>
+                          <td className="align-middle">
+                            <strong style={{ fontSize: '16px' }}>{calculateGrandTotal()}</strong>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </Col>
+                <Col lg={5}>
+                  <div className="numpad" style={{ padding: '10px' }}>
+                    <div className="row mb-2">
+                      <div className="col-4">
+                        <Button 
+                          variant="outline-secondary" 
+                          className="w-100"
+                          style={{ height: '45px', fontSize: '16px' }}
+                          onClick={() => handleNumpadInput('1')}
+                          onMouseDown={(e) => e.preventDefault()}
+                          disabled={!activeField}
+                        >
+                          1
+                        </Button>
+                      </div>
+                      <div className="col-4">
+                        <Button 
+                          variant="outline-secondary" 
+                          className="w-100"
+                          style={{ height: '45px', fontSize: '16px' }}
+                          onClick={() => handleNumpadInput('2')}
+                          onMouseDown={(e) => e.preventDefault()}
+                          disabled={!activeField}
+                        >
+                          2
+                        </Button>
+                      </div>
+                      <div className="col-4">
+                        <Button 
+                          variant="outline-secondary" 
+                          className="w-100"
+                          style={{ height: '45px', fontSize: '16px' }}
+                          onClick={() => handleNumpadInput('3')}
+                          onMouseDown={(e) => e.preventDefault()}
+                          disabled={!activeField}
+                        >
+                          3
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="row mb-2">
+                      <div className="col-4">
+                        <Button 
+                          variant="outline-secondary" 
+                          className="w-100"
+                          style={{ height: '45px', fontSize: '16px' }}
+                          onClick={() => handleNumpadInput('4')}
+                          onMouseDown={(e) => e.preventDefault()}
+                          disabled={!activeField}
+                        >
+                          4
+                        </Button>
+                      </div>
+                      <div className="col-4">
+                        <Button 
+                          variant="outline-secondary" 
+                          className="w-100"
+                          style={{ height: '45px', fontSize: '16px' }}
+                          onClick={() => handleNumpadInput('5')}
+                          onMouseDown={(e) => e.preventDefault()}
+                          disabled={!activeField}
+                        >
+                          5
+                        </Button>
+                      </div>
+                      <div className="col-4">
+                        <Button 
+                          variant="outline-secondary" 
+                          className="w-100"
+                          style={{ height: '45px', fontSize: '16px' }}
+                          onClick={() => handleNumpadInput('6')}
+                          onMouseDown={(e) => e.preventDefault()}
+                          disabled={!activeField}
+                        >
+                          6
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="row mb-2">
+                      <div className="col-4">
+                        <Button 
+                          variant="outline-secondary" 
+                          className="w-100"
+                          style={{ height: '45px', fontSize: '16px' }}
+                          onClick={() => handleNumpadInput('7')}
+                          onMouseDown={(e) => e.preventDefault()}
+                          disabled={!activeField}
+                        >
+                          7
+                        </Button>
+                      </div>
+                      <div className="col-4">
+                        <Button 
+                          variant="outline-secondary" 
+                          className="w-100"
+                          style={{ height: '45px', fontSize: '16px' }}
+                          onClick={() => handleNumpadInput('8')}
+                          onMouseDown={(e) => e.preventDefault()}
+                          disabled={!activeField}
+                        >
+                          8
+                        </Button>
+                      </div>
+                      <div className="col-4">
+                        <Button 
+                          variant="outline-secondary" 
+                          className="w-100"
+                          style={{ height: '45px', fontSize: '16px' }}
+                          onClick={() => handleNumpadInput('9')}
+                          onMouseDown={(e) => e.preventDefault()}
+                          disabled={!activeField}
+                        >
+                          9
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="row">
+                      <div className="col-4">
+                        <Button 
+                          variant="danger" 
+                          className="w-100"
+                          style={{ height: '45px', fontSize: '16px' }}
+                          onClick={() => handleNumpadInput('C')}
+                          onMouseDown={(e) => e.preventDefault()}
+                        >
+                          C
+                        </Button>
+                      </div>
+                      <div className="col-4">
+                        <Button 
+                          variant="outline-secondary" 
+                          className="w-100"
+                          style={{ height: '45px', fontSize: '16px' }}
+                          onClick={() => handleNumpadInput('0')}
+                          onMouseDown={(e) => e.preventDefault()}
+                          disabled={!activeField}
+                        >
+                          0
+                        </Button>
+                      </div>
+                      <div className="col-4">
+                        <Button 
+                          variant="dark" 
+                          className="w-100"
+                          style={{ height: '45px', fontSize: '16px' }}
+                          onClick={() => handleNumpadInput('⌫')}
+                          onMouseDown={(e) => e.preventDefault()}
+                          disabled={!activeField || inputValue === ''}
+                        >
+                          ⌫
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="text-center mt-3">
+                      {!activeField ? (
+                        <small className="text-muted">Click on a count field to start entering values</small>
+                      ) : (
+                        <div>
+                          <small className="text-info">Active: {activeField.replace('denomination', '')} Denom</small>
+                          <br />
+                          <small className="text-success">You can now use the numpad or type directly</small>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Col>
+              </Row>
+            </Form.Group>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={onHide}>
+              {dayCloseResult ? 'Close' : 'Cancel'}
+            </Button>
+            {!dayCloseResult && !showThermalButton && (
+            <Button variant="danger" type="submit" disabled={isLoading}>
+              {isLoading ? 'Processing...' : 'Confirm Day Close'}
+            </Button>
+            )}
+            {showThermalButton && !dayCloseResult && (
+            <Button variant="primary" onClick={handleGenerateThermalReceipt} disabled={isGeneratingThermal}>
+              {isGeneratingThermal ? 'Generating...' : 'Generate Thermal Receipt'}
+            </Button>
+            )}
+          </Modal.Footer>
+        </Form>
+      )}
+      
+      {showThermalReport && (
+        <>
+          <Modal.Body>
+            {dayCloseResult && (
+              <Row className="mb-3">
+                <Col md={6}>
+                  <Card className="h-100">
+                    <Card.Header>
+                      <h6 className="mb-0">Day Close Summary</h6>
+                    </Card.Header>
+                    <Card.Body>
+                      <p><strong>Status:</strong> {dayCloseResult.message}</p>
+                      <p><strong>Closed Shifts:</strong> {dayCloseResult.closedCount}</p>
+                      <p><strong>Day Close Time:</strong> {new Date(dayCloseResult.dayCloseTime).toLocaleString()}</p>
+                      {dayCloseResult.summary && (
+                        <>
+                          <p><strong>Day Total Orders:</strong> {dayCloseResult.summary.dayWise.totalOrders}</p>
+                          <p><strong>Day Total Sales:</strong> {dayCloseResult.summary.dayWise.totalSales.toFixed(2)} AED</p>
+                          <p><strong>Shift Total Orders:</strong> {dayCloseResult.summary.shiftWise.totalOrders}</p>
+                          <p><strong>Shift Total Sales:</strong> {dayCloseResult.summary.shiftWise.totalSales.toFixed(2)} AED</p>
+                        </>
+                      )}
+                      {dayCloseResult.membershipBreakdown && (
+                        <>
+                          <p><strong>Membership Meal Sales:</strong> {dayCloseResult.membershipBreakdown.membershipMeal.toFixed(2)} AED</p>
+                          <p><strong>Membership Register Sales:</strong> {dayCloseResult.membershipBreakdown.membershipRegister.toFixed(2)} AED</p>
+                        </>
+                      )}
+                    </Card.Body>
+                  </Card>
+                </Col>
+                <Col md={6}>
+                  <Card className="h-100">
+                    <Card.Header>
+                      <h6 className="mb-0">Thermal Report Preview</h6>
+                    </Card.Header>
+                    <Card.Body>
+                      {thermalError ? (
+                        <div 
+                          style={{ 
+                            maxHeight: '300px',
+                            overflow: 'auto',
+                            backgroundColor: '#f8f9fa',
+                            padding: '10px',
+                            border: '1px solid #dc3545',
+                            textAlign: 'center',
+                            color: '#dc3545'
+                          }}
+                        >
+                          <p><strong>Error:</strong></p>
+                          <p>{thermalError}</p>
+                          <small>Please try again or contact support</small>
+                        </div>
+                      ) : thermalReport ? (
+                        <div 
+                          style={{ 
+                        maxHeight: '300px',
+                        overflow: 'auto',
+                        backgroundColor: '#f8f9fa',
+                        padding: '10px',
+                        border: '1px solid #dee2e6'
+                          }}
+                        >
+                          {typeof thermalReport === 'string' && thermalReport.includes('<') ? (
+                            <div dangerouslySetInnerHTML={{ __html: thermalReport }} />
+                          ) : (
+                            <div style={{ textAlign: 'center', color: '#dc3545' }}>
+                              <p><strong>Error:</strong> Thermal report format is invalid</p>
+                              <p>Expected HTML content, but received: {typeof thermalReport}</p>
+                              <small>Please try generating the thermal report again</small>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div 
+                          style={{ 
+                            maxHeight: '300px',
+                            overflow: 'auto',
+                            backgroundColor: '#f8f9fa',
+                            padding: '10px',
+                            border: '1px solid #dee2e6',
+                            textAlign: 'center',
+                            color: '#6c757d'
+                          }}
+                        >
+                          <p>No thermal report available</p>
+                          <small>
+                            {isDayClosed 
+                              ? 'Click "Generate Thermal Receipt" to create a report' 
+                              : 'Please close the day first to generate thermal receipt'
+                            }
+                          </small>
+                      </div>
+                      )}
+                    </Card.Body>
+                  </Card>
+                </Col>
+              </Row>
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={handleCloseModal}>
+              Close
+            </Button>
+            {!thermalReport && isDayClosed && (
+              <Button 
+                variant="success" 
+                onClick={handleGenerateThermalReceipt}
+                disabled={isGeneratingThermal}
+              >
+                {isGeneratingThermal ? 'Generating...' : 'Generate Thermal Receipt'}
+              </Button>
+            )}
+            {thermalReport && (
+              <>
+                <Button variant="info" onClick={handleOpenThermalReceiptPage} className="me-2">
+                  📄 Open in New Page
+                </Button>
+                <Button variant="primary" onClick={handlePrintThermalReport}>
+                  🖨️ Print Thermal Report
+                </Button>
+              </>
+            )}
+          </Modal.Footer>
+        </>
+      )}
+      
+      {showJsonThermalReport && (
+        <>
+          <Modal.Body>
+            {jsonThermalError ? (
+              <div 
+                style={{ 
+                  maxHeight: '300px',
+                  overflow: 'auto',
+                  backgroundColor: '#f8f9fa',
+                  padding: '10px',
+                  border: '1px solid #dc3545',
+                  textAlign: 'center',
+                  color: '#dc3545'
+                }}
+              >
+                <p><strong>Error:</strong></p>
+                <p>{jsonThermalError}</p>
+                <small>Please try again or contact support</small>
+              </div>
+            ) : jsonThermalData ? (
+              <div style={{ maxHeight: '500px', overflow: 'auto' }}>
+                <ThermalReceiptFromJson 
+                  data={jsonThermalData} 
+                  onPrint={handlePrintJsonThermalReport}
+                  onDownload={handlePrintJsonThermalReport}
+                />
+              </div>
+            ) : (
+              <div 
+                style={{ 
+                  maxHeight: '300px',
+                  overflow: 'auto',
+                  backgroundColor: '#f8f9fa',
+                  padding: '10px',
+                  border: '1px solid #dee2e6',
+                  textAlign: 'center',
+                  color: '#6c757d'
+                }}
+              >
+                <p>No JSON thermal report available</p>
+                <small>
+                  {isDayClosed 
+                    ? 'Click "Generate JSON Thermal" to create a report' 
+                    : 'Please close the day first to generate thermal receipt'
+                  }
+                </small>
+              </div>
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={handleCloseModal}>
+              Close
+            </Button>
+            {jsonThermalData && (
+              <>
+                <Button variant="info" onClick={() => {
+                  const htmlContent = generateThermalReceiptHtml(jsonThermalData)
+                  const newWindow = window.open('', '_blank')
+                  if (newWindow) {
+                    newWindow.document.write(htmlContent)
+                    newWindow.document.close()
+                  }
+                }} className="me-2">
+                  📄 Open in New Page
+                </Button>
+                <Button variant="primary" onClick={handlePrintJsonThermalReport}>
+                  🖨️ Print JSON Thermal Report
+                </Button>
+              </>
+            )}
+          </Modal.Footer>
+        </>
+      )}
+      
+      {/* Unpaid Bills Error Modal - Separate Floating Popup */}
+      <Modal 
+        show={showUnpaidBillsModal} 
+        onHide={() => setShowUnpaidBillsModal(false)} 
+        centered 
+        size="sm"
+        backdrop="static"
+        keyboard={false}
+        style={{ zIndex: 9999 }}
+        contentClassName="shadow-lg border-0"
+        dialogClassName="mb-0"
+      >
+        <Modal.Header 
+          closeButton 
+          className="bg-danger text-white border-0"
+          style={{ 
+            borderRadius: '0.375rem 0.375rem 0 0',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+          }}
+        >
+          <Modal.Title className="fs-6 fw-bold">
+            <i className="fas fa-exclamation-triangle me-2"></i>
+            Unpaid Bills Detected
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body 
+          className="text-center py-4 px-4"
+          style={{ 
+            backgroundColor: '#fff',
+            borderRadius: '0 0 0.375rem 0.375rem'
+          }}
+        >
+          <div className="mb-3">
+            <i className="fas fa-ban text-danger" style={{ fontSize: '2.5rem' }}></i>
+          </div>
+          <h6 className="text-danger mb-2 fw-bold">Cannot Close Day</h6>
+          <p className="text-muted mb-3 small">
+            {unpaidBillsError?.message || 'There are unpaid orders that need to be settled first.'}
+          </p>
+          {unpaidBillsError?.unpaidOrdersCount > 0 && (
+            <div className="mb-3">
+              <span className="badge bg-danger fs-6 px-3 py-2">
+                {unpaidBillsError.unpaidOrdersCount} unpaid orders
+              </span>
+            </div>
+          )}
+          <p className="text-muted small mb-0">
+            Please settle all unpaid bills before closing the day.
+          </p>
+        </Modal.Body>
+        <Modal.Footer 
+          className="border-0 pt-0 pb-3 px-4"
+          style={{ 
+            backgroundColor: '#f8f9fa',
+            borderRadius: '0 0 0.375rem 0.375rem'
+          }}
+        >
+          <div className="d-flex justify-content-center w-100 gap-2">
+            <Button 
+              variant="outline-secondary" 
+              onClick={() => setShowUnpaidBillsModal(false)}
+              size="sm"
+              className="px-3"
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="info" 
+              onClick={() => {
+                setShowUnpaidBillsModal(false)
+                router.push('/reports/all-income')
+              }}
+              size="sm"
+              className="px-3"
+            >
+              <i className="fas fa-chart-line me-1"></i>
+              Reports
+            </Button>
+            <Button 
+              variant="primary" 
+              onClick={() => {
+                setShowUnpaidBillsModal(false)
+                router.push('/pos')
+              }}
+              size="sm"
+              className="px-3"
+            >
+              <i className="fas fa-cash-register me-1"></i>
+              POS
+            </Button>
+          </div>
+        </Modal.Footer>
+      </Modal>
+    </Modal>
+  )
+}
+
+export default DayCloseModal

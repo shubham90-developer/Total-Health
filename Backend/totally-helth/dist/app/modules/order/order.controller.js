@@ -1,0 +1,491 @@
+"use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.changePaymentModeSimple = exports.getUnpaidOrdersToday = exports.getPaidOrdersToday = exports.deleteOrderById = exports.updateOrderById = exports.getOrderById = exports.getOrders = exports.unholdMembership = exports.holdMembership = exports.cancelOrder = exports.createOrder = void 0;
+const zod_1 = require("zod");
+const order_model_1 = require("./order.model");
+const order_validation_1 = require("./order.validation");
+const counter_model_1 = require("../../services/counter.model");
+const paymentTracking_service_1 = require("./paymentTracking.service");
+function dateStamp() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${y}${m}${dd}`;
+}
+function nextSeq(key) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const doc = yield counter_model_1.Counter.findOneAndUpdate({ key }, { $inc: { seq: 1 } }, { upsert: true, new: true });
+        return doc.seq;
+    });
+}
+const createOrder = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
+    try {
+        const payload = order_validation_1.orderCreateValidation.parse(req.body);
+        // normalize date
+        const date = new Date(payload.date);
+        // invoice / order number auto-generation if missing
+        const stamp = dateStamp();
+        let invoiceNo = payload.invoiceNo;
+        if (!invoiceNo) {
+            const s = yield nextSeq(`INV-${stamp}`);
+            invoiceNo = `INV-${stamp}-${String(s).padStart(6, '0')}`;
+        }
+        const ordSeq = yield nextSeq(`ORD-${stamp}`);
+        const orderNo = `ORD-${stamp}-${String(ordSeq).padStart(6, '0')}`;
+        // branch from token (if available)
+        const reqWithUser = req;
+        const branchId = payload.branchId || reqWithUser.branchId;
+        const orderData = Object.assign(Object.assign({}, payload), { invoiceNo,
+            orderNo,
+            branchId,
+            date });
+        const created = yield order_model_1.Order.create(orderData);
+        // Add initial payment history entry for new orders
+        const initialPaymentHistory = (0, paymentTracking_service_1.createInitialHistoryEntry)(created);
+        created.paymentHistory = initialPaymentHistory;
+        yield created.save();
+        // If middleware provided custom timestamps (for day close scenarios), update them
+        // Access timestamps directly from req.body since validation strips them out
+        const customCreatedAt = req.body.createdAt;
+        const customUpdatedAt = req.body.updatedAt;
+        console.log('🔍 Checking for custom timestamps:');
+        console.log('   - customCreatedAt:', customCreatedAt);
+        console.log('   - customUpdatedAt:', customUpdatedAt);
+        console.log('   - Full req.body keys:', Object.keys(req.body));
+        if (customCreatedAt || customUpdatedAt) {
+            console.log('📅 Custom timestamps found, updating order...');
+            const updateData = {};
+            if (customCreatedAt)
+                updateData.createdAt = new Date(customCreatedAt);
+            if (customUpdatedAt)
+                updateData.updatedAt = new Date(customUpdatedAt);
+            console.log('📅 Update data:', updateData);
+            // Use findByIdAndUpdate to override timestamps
+            const updated = yield order_model_1.Order.findByIdAndUpdate(created._id, updateData, {
+                new: true,
+                runValidators: false,
+                timestamps: false // Disable automatic timestamp updates
+            });
+            console.log('📅 Order updated with custom timestamps');
+            // Fetch the updated document
+            const updatedOrder = yield order_model_1.Order.findById(created._id);
+            res.status(201).json({ message: 'Order created', data: updatedOrder });
+            return;
+        }
+        else {
+            console.log('📅 No custom timestamps found, using default timestamps');
+        }
+        res.status(201).json({ message: 'Order created', data: created });
+    }
+    catch (err) {
+        if (err instanceof zod_1.ZodError) {
+            res.status(400).json({ message: ((_b = (_a = err.issues) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.message) || 'Validation error' });
+            return;
+        }
+        res.status(500).json({ message: (err === null || err === void 0 ? void 0 : err.message) || 'Failed to create order' });
+    }
+});
+exports.createOrder = createOrder;
+const cancelOrder = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    try {
+        const id = req.params.id;
+        const reason = ((_a = req.body) === null || _a === void 0 ? void 0 : _a.reason) || '';
+        const item = yield order_model_1.Order.findOneAndUpdate({ _id: id, isDeleted: false }, { canceled: true, cancelReason: reason, canceledAt: new Date() }, { new: true });
+        if (!item) {
+            res.status(404).json({ message: 'Order not found' });
+            return;
+        }
+        res.json({ message: 'Order canceled', data: item });
+    }
+    catch (err) {
+        res.status(500).json({ message: (err === null || err === void 0 ? void 0 : err.message) || 'Failed to cancel order' });
+    }
+});
+exports.cancelOrder = cancelOrder;
+function todayYmd() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${dd}`;
+}
+const holdMembership = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const id = req.params.id;
+        const order = yield order_model_1.Order.findOne({ _id: id, isDeleted: false });
+        if (!order) {
+            res.status(404).json({ message: 'Order not found' });
+            return;
+        }
+        if (order.get('salesType') !== 'membership') {
+            res.status(400).json({ message: 'Not a membership order' });
+            return;
+        }
+        const mem = order.get('membership') || {};
+        if (mem.hold) {
+            res.json({ message: 'Already on hold', data: order });
+            return;
+        }
+        const ranges = Array.isArray(mem.holdRanges) ? mem.holdRanges : [];
+        // if last range is open, do nothing, else push new open range starting today
+        if (!(ranges.length > 0 && !ranges[ranges.length - 1].to)) {
+            ranges.push({ from: todayYmd() });
+        }
+        mem.hold = true;
+        mem.holdRanges = ranges;
+        order.set('membership', mem);
+        yield order.save();
+        res.json({ message: 'Membership put on hold', data: order });
+    }
+    catch (err) {
+        res.status(500).json({ message: (err === null || err === void 0 ? void 0 : err.message) || 'Failed to hold membership' });
+    }
+});
+exports.holdMembership = holdMembership;
+const unholdMembership = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const id = req.params.id;
+        const order = yield order_model_1.Order.findOne({ _id: id, isDeleted: false });
+        if (!order) {
+            res.status(404).json({ message: 'Order not found' });
+            return;
+        }
+        if (order.get('salesType') !== 'membership') {
+            res.status(400).json({ message: 'Not a membership order' });
+            return;
+        }
+        const mem = order.get('membership') || {};
+        if (!mem.hold) {
+            res.json({ message: 'Membership already active', data: order });
+            return;
+        }
+        const ranges = Array.isArray(mem.holdRanges) ? mem.holdRanges : [];
+        if (ranges.length === 0 || ranges[ranges.length - 1].to) {
+            // create a small zero-length hold if none open, else just proceed
+            ranges.push({ from: todayYmd(), to: todayYmd() });
+        }
+        else {
+            ranges[ranges.length - 1].to = todayYmd();
+        }
+        mem.hold = false;
+        mem.holdRanges = ranges;
+        order.set('membership', mem);
+        yield order.save();
+        res.json({ message: 'Membership resumed', data: order });
+    }
+    catch (err) {
+        res.status(500).json({ message: (err === null || err === void 0 ? void 0 : err.message) || 'Failed to unhold membership' });
+    }
+});
+exports.unholdMembership = unholdMembership;
+const getOrders = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { q = '', page = '1', limit = '20', status, startDate, endDate, salesType, customerId, aggregatorId, branchId, orderType, canceled } = req.query;
+        const filter = { isDeleted: false };
+        if (status)
+            filter.status = status;
+        if (salesType) {
+            const types = String(salesType)
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean);
+            if (types.length > 0) {
+                filter.salesType = { $in: types };
+            }
+        }
+        if (customerId) {
+            filter['customer.id'] = String(customerId);
+        }
+        if (aggregatorId) {
+            filter.aggregatorId = String(aggregatorId);
+        }
+        if (branchId) {
+            filter.branchId = String(branchId);
+        }
+        if (orderType) {
+            const types = String(orderType).split(',').map((s) => s.trim()).filter(Boolean);
+            if (types.length > 0)
+                filter.orderType = { $in: types };
+        }
+        if (typeof canceled !== 'undefined') {
+            filter.canceled = String(canceled) === 'true' || String(canceled) === '1';
+        }
+        if (startDate || endDate) {
+            filter.date = {};
+            if (startDate)
+                filter.date.$gte = new Date(startDate);
+            if (endDate)
+                filter.date.$lte = new Date(endDate);
+        }
+        if (q) {
+            filter.$or = [
+                { invoiceNo: { $regex: q, $options: 'i' } },
+                { 'customer.name': { $regex: q, $options: 'i' } },
+            ];
+        }
+        const p = Math.max(1, parseInt(page, 10) || 1);
+        const l = Math.max(1, Math.min(100, parseInt(limit, 10) || 20));
+        const skip = (p - 1) * l;
+        const [items, total] = yield Promise.all([
+            order_model_1.Order.find(filter).sort({ createdAt: -1 }).skip(skip).limit(l),
+            order_model_1.Order.countDocuments(filter),
+        ]);
+        // totals
+        const totalsAgg = yield order_model_1.Order.aggregate([
+            { $match: filter },
+            { $group: { _id: null, total: { $sum: '$total' }, count: { $sum: 1 } } },
+        ]);
+        const summary = totalsAgg[0] || { total: 0, count: 0 };
+        res.json({ data: items, meta: { page: p, limit: l, total }, summary });
+    }
+    catch (err) {
+        res.status(500).json({ message: (err === null || err === void 0 ? void 0 : err.message) || 'Failed to fetch orders' });
+    }
+});
+exports.getOrders = getOrders;
+const getOrderById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const item = yield order_model_1.Order.findOne({ _id: req.params.id, isDeleted: false });
+        if (!item) {
+            res.status(404).json({ message: 'Order not found' });
+            return;
+        }
+        res.json({ data: item });
+    }
+    catch (err) {
+        res.status(500).json({ message: (err === null || err === void 0 ? void 0 : err.message) || 'Failed to fetch order' });
+    }
+});
+exports.getOrderById = getOrderById;
+const updateOrderById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
+    try {
+        const payload = order_validation_1.orderUpdateValidation.parse(req.body);
+        const { id } = req.params;
+        const updatedOrder = yield (0, paymentTracking_service_1.updateOrderWithAutoTracking)(id, payload);
+        if (!updatedOrder) {
+            res.status(404).json({ message: 'Order not found' });
+            return;
+        }
+        res.json({
+            message: 'Order updated successfully',
+            data: updatedOrder,
+            success: true
+        });
+    }
+    catch (err) {
+        if (err instanceof zod_1.ZodError) {
+            res.status(400).json({ message: ((_b = (_a = err.issues) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.message) || 'Validation error' });
+            return;
+        }
+        res.status(500).json({ message: (err === null || err === void 0 ? void 0 : err.message) || 'Failed to update order' });
+    }
+});
+exports.updateOrderById = updateOrderById;
+const deleteOrderById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const item = yield order_model_1.Order.findOneAndUpdate({ _id: req.params.id, isDeleted: false }, { isDeleted: true }, { new: true });
+        if (!item) {
+            res.status(404).json({ message: 'Order not found' });
+            return;
+        }
+        res.json({ message: 'Order deleted' });
+    }
+    catch (err) {
+        res.status(500).json({ message: (err === null || err === void 0 ? void 0 : err.message) || 'Failed to delete order' });
+    }
+});
+exports.deleteOrderById = deleteOrderById;
+const getPaidOrdersToday = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { branchId } = req.query;
+        const today = new Date();
+        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+        const filter = {
+            isDeleted: false,
+            status: 'paid',
+            date: { $gte: startOfDay, $lte: endOfDay }
+        };
+        if (branchId) {
+            filter.branchId = String(branchId);
+        }
+        const orders = yield order_model_1.Order.find(filter).sort({ createdAt: -1 });
+        // Calculate totals
+        const totalsAgg = yield order_model_1.Order.aggregate([
+            { $match: filter },
+            { $group: { _id: null, total: { $sum: '$total' }, count: { $sum: 1 } } }
+        ]);
+        const summary = totalsAgg[0] || { total: 0, count: 0 };
+        res.json({
+            message: 'Paid orders for today retrieved successfully',
+            data: orders,
+            summary,
+            date: today.toISOString().split('T')[0]
+        });
+    }
+    catch (err) {
+        res.status(500).json({ message: (err === null || err === void 0 ? void 0 : err.message) || 'Failed to fetch paid orders for today' });
+    }
+});
+exports.getPaidOrdersToday = getPaidOrdersToday;
+const getUnpaidOrdersToday = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { branchId } = req.query;
+        const today = new Date();
+        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+        const filter = {
+            isDeleted: false,
+            status: 'unpaid',
+            date: { $gte: startOfDay, $lte: endOfDay }
+        };
+        if (branchId) {
+            filter.branchId = String(branchId);
+        }
+        const orders = yield order_model_1.Order.find(filter).sort({ createdAt: -1 });
+        // Calculate totals
+        const totalsAgg = yield order_model_1.Order.aggregate([
+            { $match: filter },
+            { $group: { _id: null, total: { $sum: '$total' }, count: { $sum: 1 } } }
+        ]);
+        const summary = totalsAgg[0] || { total: 0, count: 0 };
+        res.json({
+            message: 'Unpaid orders for today retrieved successfully',
+            data: orders,
+            summary,
+            date: today.toISOString().split('T')[0]
+        });
+    }
+    catch (err) {
+        res.status(500).json({ message: (err === null || err === void 0 ? void 0 : err.message) || 'Failed to fetch unpaid orders for today' });
+    }
+});
+exports.getUnpaidOrdersToday = getUnpaidOrdersToday;
+const changePaymentModeSimple = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c, _d, _e;
+    try {
+        const { id } = req.params;
+        const payload = order_validation_1.simplePaymentModeChangeValidation.parse(req.body);
+        // Find the order
+        const order = yield order_model_1.Order.findOne({ _id: id, isDeleted: false });
+        if (!order) {
+            res.status(404).json({ message: 'Order not found' });
+            return;
+        }
+        // Check if order is paid
+        if (order.status !== 'paid') {
+            res.status(400).json({ message: 'Only paid orders can have their payment mode changed' });
+            return;
+        }
+        // Check if order is from current date
+        const today = new Date();
+        const orderDate = new Date(order.date);
+        const isToday = orderDate.toDateString() === today.toDateString();
+        if (!isToday) {
+            res.status(400).json({ message: 'Payment mode can only be changed for orders from current date' });
+            return;
+        }
+        // Get current payments
+        const currentPayments = order.payments || [];
+        if (currentPayments.length === 0) {
+            res.status(400).json({ message: 'No payments found for this order' });
+            return;
+        }
+        // Store previous payment details for history
+        const previousPaymentDetails = currentPayments.map(p => `${p.amount} ${p.type}${p.methodType ? ` (${p.methodType})` : ''}`).join(', ');
+        // Debug logging
+        console.log('=== PAYMENT MODE CHANGE DEBUG ===');
+        console.log('Current payments:', currentPayments);
+        // Add change sequence to existing history entries (no new entries created)
+        const existingEntries = ((_a = order.paymentHistory) === null || _a === void 0 ? void 0 : _a.entries) || [];
+        // Create new payments array with the same amounts and methodTypes but new payment mode
+        const newPayments = currentPayments.map(payment => ({
+            type: payload.paymentMode,
+            methodType: payment.methodType,
+            amount: payment.amount
+        }));
+        // Extract previous and new payment modes for better tracking
+        const prevModes = [...new Set(currentPayments.map(p => p.type))]; // Get unique previous modes
+        const nowModes = [...new Set(newPayments.map(p => p.type))]; // Get unique new modes
+        const currentChange = {
+            from: prevModes,
+            to: nowModes,
+            timestamp: new Date()
+        };
+        console.log('Current change object:', currentChange);
+        console.log('Existing entries count:', existingEntries.length);
+        console.log('New payments:', newPayments);
+        console.log('Previous modes:', prevModes);
+        console.log('New modes:', nowModes);
+        // Collect ALL payment modes from ALL entries (both split and direct)
+        const allPaymentModesFromHistory = new Set();
+        existingEntries.forEach(entry => {
+            if (entry.payments) {
+                entry.payments.forEach(payment => {
+                    allPaymentModesFromHistory.add(payment.type);
+                });
+            }
+        });
+        const uniquePaymentModesFromHistory = Array.from(allPaymentModesFromHistory);
+        console.log('All unique payment modes from history:', uniquePaymentModesFromHistory);
+        console.log('New payment modes:', nowModes);
+        // Check if there's any actual change
+        const hasActualChange = uniquePaymentModesFromHistory.some(historyMode => !nowModes.includes(historyMode));
+        console.log('Has actual change:', hasActualChange);
+        // Create ONE changeSequence entry for the overall change
+        const overallChange = {
+            from: uniquePaymentModesFromHistory,
+            to: nowModes,
+            timestamp: new Date()
+        };
+        console.log('Overall change:', overallChange);
+        // Keep entries as they are (no changeSequence in individual entries)
+        let updatedEntries = existingEntries;
+        // Update payment history with changeSequence at the top level
+        const existingChangeSequence = ((_b = order.paymentHistory) === null || _b === void 0 ? void 0 : _b.changeSequence) || [];
+        const updatedPaymentHistory = {
+            totalPaid: newPayments.reduce((sum, p) => sum + p.amount, 0),
+            changeSequence: hasActualChange ? [...existingChangeSequence, overallChange] : existingChangeSequence,
+            entries: updatedEntries
+        };
+        // Update the order with new payment modes and updated history
+        const updatedOrder = yield order_model_1.Order.findByIdAndUpdate(id, {
+            payments: newPayments,
+            paymentHistory: updatedPaymentHistory
+        }, { new: true });
+        if (!updatedOrder) {
+            res.status(500).json({ message: 'Failed to update payment mode' });
+            return;
+        }
+        // Debug: Check if the updated order has change sequences
+        console.log('Updated order payment history changeSequence:', (_c = updatedOrder.paymentHistory) === null || _c === void 0 ? void 0 : _c.changeSequence);
+        // Use the updated order directly (no need to fetch again)
+        const finalOrder = updatedOrder;
+        res.json({
+            message: `Payment mode changed to ${payload.paymentMode} successfully`,
+            data: finalOrder,
+            success: true
+        });
+    }
+    catch (err) {
+        if (err instanceof zod_1.ZodError) {
+            res.status(400).json({ message: ((_e = (_d = err.issues) === null || _d === void 0 ? void 0 : _d[0]) === null || _e === void 0 ? void 0 : _e.message) || 'Validation error' });
+            return;
+        }
+        res.status(500).json({ message: (err === null || err === void 0 ? void 0 : err.message) || 'Failed to change payment mode' });
+    }
+});
+exports.changePaymentModeSimple = changePaymentModeSimple;
