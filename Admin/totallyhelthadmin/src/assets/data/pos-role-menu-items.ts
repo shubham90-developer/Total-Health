@@ -496,15 +496,6 @@ export const POS_ROLE_MENU_ITEMS: MenuItemType[] = [
     ],
   },
   {
-<<<<<<< HEAD
-=======
-    key: 'Services',
-    icon: 'solar:calendar-bold-duotone',
-    label: 'Services',
-    url: '/pages/services',
-  },
-  {
->>>>>>> origin/main
     key: 'blog',
     label: 'Blog',
     icon: 'solar:document-bold-duotone',
@@ -556,16 +547,6 @@ export const POS_ROLE_MENU_ITEMS: MenuItemType[] = [
     url: '/support/faqs',
   },
   {
-<<<<<<< HEAD
-=======
-    key: 'Resto-Banner',
-    label: 'Restorent Banner',
-    icon: 'solar:question-circle-bold-duotone',
-    url: '/pages/resto-banner',
-  },
-
-  {
->>>>>>> origin/main
     key: 'privacy-policy',
     label: 'Privacy Policy',
     icon: 'solar:document-text-bold-duotone',

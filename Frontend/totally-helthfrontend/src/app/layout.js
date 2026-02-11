@@ -4,10 +4,7 @@ import Subscribe from "./components/Subscribe";
 import Footer from "./components/Footer";
 import ClientNavWrapper from "./components/ClientNavWrapper";
 import Script from "next/script";
-<<<<<<< HEAD
 import ReduxProvider from "../../providers/reduxProviders";
-=======
->>>>>>> origin/main
 
 <Script
   src="https://checkout.razorpay.com/v1/checkout.js"

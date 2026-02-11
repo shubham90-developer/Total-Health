@@ -16,12 +16,9 @@ const baseQuery = fetchBaseQuery({
       console.error('Error preparing headers:', error)
     }
 
-<<<<<<< HEAD
     // Don't set content-type in prepareHeaders
     // We'll handle it in fetchFn based on the actual request body and method
 
-=======
->>>>>>> origin/main
     return headers
   },
   fetchFn: async (input, init) => {
@@ -108,17 +105,6 @@ export const baseApi = createApi({
     'Video',
     'AboutUs',
     'Contract',
-<<<<<<< HEAD
-=======
-    'Health',
-    'CompanyBenefits',
-    'EmployeeBenefits',
-    'Services',
-    'RestoBanner',
-    'MenuCategories',
-    'MenuItems',
-    'FAQs',
->>>>>>> origin/main
   ],
   endpoints: () => ({}),
 })
